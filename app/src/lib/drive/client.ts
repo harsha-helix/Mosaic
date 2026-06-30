@@ -134,3 +134,15 @@ export async function createFolder(name: string, parentId?: string): Promise<str
   const data = (await res.json()) as { id: string }
   return data.id
 }
+
+/** Re-acquire a token silently on reload. Never shows a popup. Resolves even on failure. */
+export function silentSignIn(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!_tokenClient) { resolve(); return }
+    _tokenClient.callback = (response) => {
+      if (!response.error) _accessToken = response.access_token
+      resolve()
+    }
+    _tokenClient.requestAccessToken({ prompt: '' })
+  })
+}

@@ -6,8 +6,10 @@ import { FAB } from './components/FAB/FAB'
 import { MomentCapture } from './components/MomentCapture/MomentCapture'
 import { useAuthStore } from './store/auth'
 import { useTodayStore } from './store/today'
-import { getEntry, getMoments } from './lib/db/queries'
+import { getEntry, getMoments, getFileId } from './lib/db/queries'
 import { fetchEntry, fetchMoments } from './lib/drive/operations'
+import { initAuth, silentSignIn } from './lib/drive/client'
+import { setFolderIds } from './lib/drive/fileIndex'
 
 // Screens
 import HomeScreen       from './screens/Home'
@@ -20,6 +22,8 @@ import SearchScreen     from './screens/Search'
 import SettingsScreen   from './screens/Settings'
 import OnboardingScreen from './screens/Onboarding'
 
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
 })
@@ -28,18 +32,40 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** Wait for the GIS script to finish loading */
+function waitForGIS(): Promise<void> {
+  return new Promise((resolve) => {
+    if (window.google?.accounts?.oauth2) { resolve(); return }
+    const interval = setInterval(() => {
+      if (window.google?.accounts?.oauth2) { clearInterval(interval); resolve() }
+    }, 100)
+  })
+}
+
+/** Restore Drive folder IDs from IndexedDB into memory */
+async function restoreFolderIds(): Promise<void> {
+  const [mosaic, entries, moments, media] = await Promise.all([
+    getFileId('__mosaic_root__'),
+    getFileId('__entries_folder__'),
+    getFileId('__moments_folder__'),
+    getFileId('__media_folder__'),
+  ])
+  if (mosaic && entries && moments && media) {
+    setFolderIds({ mosaic, entries, moments, media })
+  }
+}
+
 function AppShell() {
   const isSignedIn = useAuthStore(s => s.isSignedIn)
   const { setEntry, setMoments, setLoaded } = useTodayStore()
   const [showCapture, setShowCapture] = useState(false)
 
-  // Load today's data from IndexedDB on mount, then background-sync from Drive
   useEffect(() => {
     if (!isSignedIn) return
     const date = todayDate()
 
-    async function loadToday() {
-      // 1. Load from IndexedDB immediately
+    async function init() {
+      // 1. Load from IndexedDB immediately so UI is responsive
       const [localEntry, localMoments] = await Promise.all([
         getEntry(date),
         getMoments(date),
@@ -48,7 +74,13 @@ function AppShell() {
       if (localMoments) setMoments(localMoments)
       setLoaded()
 
-      // 2. Background fetch from Drive — update if we got something
+      // 2. Restore GIS token + folder IDs silently in background
+      await waitForGIS()
+      initAuth(CLIENT_ID)
+      await restoreFolderIds()
+      await silentSignIn()
+
+      // 3. Background sync from Drive
       try {
         const [driveEntry, driveMoments] = await Promise.all([
           fetchEntry(date),
@@ -57,11 +89,11 @@ function AppShell() {
         if (driveEntry)          setEntry(driveEntry)
         if (driveMoments.length) setMoments(driveMoments)
       } catch {
-        // Drive fetch failed — local data is fine
+        // Drive unavailable — local data is fine
       }
     }
 
-    loadToday()
+    init()
   }, [isSignedIn])
 
   if (!isSignedIn) {

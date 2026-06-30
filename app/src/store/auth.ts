@@ -1,5 +1,15 @@
 import { create } from 'zustand'
 
+const STORAGE_KEY = 'mosaic_auth'
+
+function readStorage(): { isSignedIn: boolean; displayName: string } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return { isSignedIn: false, displayName: '' }
+}
+
 interface AuthState {
   isSignedIn: boolean
   displayName: string
@@ -8,8 +18,13 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isSignedIn: false,
-  displayName: '',
-  setSignedIn: (name) => set({ isSignedIn: true, displayName: name }),
-  setSignedOut: () => set({ isSignedIn: false, displayName: '' }),
+  ...readStorage(),
+  setSignedIn: (name) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ isSignedIn: true, displayName: name })) } catch {}
+    set({ isSignedIn: true, displayName: name })
+  },
+  setSignedOut: () => {
+    try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    set({ isSignedIn: false, displayName: '' })
+  },
 }))

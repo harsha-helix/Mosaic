@@ -1,0 +1,92 @@
+import { getDb } from './schema'
+import type { DailyEntry, Moment } from '../../types'
+
+// ── Entries ──────────────────────────────────────────────────────────────────
+
+export async function getEntry(date: string): Promise<DailyEntry | undefined> {
+  const db = await getDb()
+  return db.get('entry', date)
+}
+
+export async function saveEntry(entry: DailyEntry): Promise<void> {
+  const db = await getDb()
+  await db.put('entry', entry)
+}
+
+export async function getAllEntries(): Promise<DailyEntry[]> {
+  const db = await getDb()
+  return db.getAll('entry')
+}
+
+// ── Moments ───────────────────────────────────────────────────────────────────
+
+export async function getMoments(date: string): Promise<Moment[]> {
+  const db = await getDb()
+  const record = await db.get('moment', date)
+  return record?.moments ?? []
+}
+
+export async function saveMoments(date: string, moments: Moment[]): Promise<void> {
+  const db = await getDb()
+  await db.put('moment', { date, moments })
+}
+
+export async function appendMoment(date: string, moment: Moment): Promise<Moment[]> {
+  const existing = await getMoments(date)
+  const updated = [...existing, moment]
+  await saveMoments(date, updated)
+  return updated
+}
+
+// ── File Index ────────────────────────────────────────────────────────────────
+
+export async function getFileId(path: string): Promise<string | undefined> {
+  const db = await getDb()
+  const record = await db.get('fileIndex', path)
+  return record?.driveId
+}
+
+export async function setFileId(path: string, driveId: string): Promise<void> {
+  const db = await getDb()
+  await db.put('fileIndex', { path, driveId })
+}
+
+export async function getAllFileIds(): Promise<Record<string, string>> {
+  const db = await getDb()
+  const all = await db.getAll('fileIndex')
+  return Object.fromEntries(all.map(r => [r.path, r.driveId]))
+}
+
+// ── Sync Queue ────────────────────────────────────────────────────────────────
+
+export async function enqueueSyncItem(
+  operation: 'write' | 'upload',
+  path: string,
+  payload: string
+): Promise<void> {
+  const db = await getDb()
+  await db.put('syncQueue', {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    operation,
+    path,
+    payload,
+    created_at: new Date().toISOString(),
+    retries: 0,
+  })
+}
+
+export async function getPendingSyncItems() {
+  const db = await getDb()
+  return db.getAll('syncQueue')
+}
+
+export async function removeSyncItem(id: string): Promise<void> {
+  const db = await getDb()
+  await db.delete('syncQueue', id)
+}
+
+export async function getAllMoments(): Promise<Moment[]> {
+  const db = await getDb()
+  const all = await db.getAll('moment')
+  return all.flatMap(r => r.moments)
+}

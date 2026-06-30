@@ -32,7 +32,6 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** Wait for the GIS script to finish loading */
 function waitForGIS(): Promise<void> {
   return new Promise((resolve) => {
     if (window.google?.accounts?.oauth2) { resolve(); return }
@@ -42,7 +41,6 @@ function waitForGIS(): Promise<void> {
   })
 }
 
-/** Restore Drive folder IDs from IndexedDB into memory */
 async function restoreFolderIds(): Promise<void> {
   const [mosaic, entries, moments, media] = await Promise.all([
     getFileId('__mosaic_root__'),
@@ -56,16 +54,24 @@ async function restoreFolderIds(): Promise<void> {
 }
 
 function AppShell() {
+  // hydrated: true once we've confirmed auth state from localStorage
+  // prevents a flash of onboarding before the store reads localStorage
+  const [hydrated, setHydrated] = useState(false)
   const isSignedIn = useAuthStore(s => s.isSignedIn)
   const { setEntry, setMoments, setLoaded } = useTodayStore()
   const [showCapture, setShowCapture] = useState(false)
+
+  // Confirm auth state on first tick, then load data
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   useEffect(() => {
     if (!isSignedIn) return
     const date = todayDate()
 
     async function init() {
-      // 1. Load from IndexedDB immediately so UI is responsive
+      // 1. Load IndexedDB immediately
       const [localEntry, localMoments] = await Promise.all([
         getEntry(date),
         getMoments(date),
@@ -74,14 +80,12 @@ function AppShell() {
       if (localMoments) setMoments(localMoments)
       setLoaded()
 
-      // 2. Restore GIS token + folder IDs silently in background
-      await waitForGIS()
-      initAuth(CLIENT_ID)
-      await restoreFolderIds()
-      await silentSignIn()
-
-      // 3. Background sync from Drive
+      // 2. Silent Drive auth + background sync — never blocks UI
       try {
+        await waitForGIS()
+        initAuth(CLIENT_ID)
+        await restoreFolderIds()
+        await silentSignIn()
         const [driveEntry, driveMoments] = await Promise.all([
           fetchEntry(date),
           fetchMoments(date),
@@ -95,6 +99,9 @@ function AppShell() {
 
     init()
   }, [isSignedIn])
+
+  // Show nothing for one tick while localStorage hydrates
+  if (!hydrated) return null
 
   if (!isSignedIn) {
     return (

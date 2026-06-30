@@ -32,7 +32,7 @@ export function signIn(): Promise<string> {
       resolve(_accessToken)
     }
     if (_accessToken) {
-      _tokenClient.requestAccessToken({ prompt: '' })
+      _tokenClient.requestAccessToken({ prompt: 'none' })
     } else {
       _tokenClient.requestAccessToken({ prompt: 'select_account' })
     }
@@ -143,6 +143,6 @@ export function silentSignIn(): Promise<void> {
       if (!response.error) _accessToken = response.access_token
       resolve()
     }
-    _tokenClient.requestAccessToken({ prompt: '' })
+    _tokenClient.requestAccessToken({ prompt: 'none' })
   })
 }

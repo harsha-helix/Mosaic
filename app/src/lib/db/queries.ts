@@ -95,3 +95,8 @@ export async function clearFileIndex(): Promise<void> {
   const db = await getDb()
   await db.clear('fileIndex')
 }
+
+export async function getAllMomentRecords(): Promise<Array<{ date: string; moments: Moment[] }>> {
+  const db = await getDb()
+  return db.getAll('moment')
+}

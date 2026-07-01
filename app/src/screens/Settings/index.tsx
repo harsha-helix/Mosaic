@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { silentSignIn } from '../../lib/drive/client'
-import { syncFromDrive } from '../../lib/drive/operations'
+import { fullSync } from '../../lib/drive/operations'
 
 export default function SettingsScreen() {
   const navigate = useNavigate()
@@ -15,11 +15,13 @@ export default function SettingsScreen() {
     setSyncResult(null)
     try {
       await silentSignIn()
-      const { entries, moments } = await syncFromDrive()
-      const parts = []
-      if (entries > 0) parts.push(`${entries} ${entries === 1 ? 'entry' : 'entries'}`)
-      if (moments > 0) parts.push(`${moments} ${moments === 1 ? 'moment' : 'moments'}`)
-      setSyncResult(parts.length > 0 ? `Pulled ${parts.join(', ')}` : 'Already up to date')
+      const { pulled, pushed } = await fullSync()
+      const parts: string[] = []
+      if (pulled.entries > 0) parts.push(`pulled ${pulled.entries} ${pulled.entries === 1 ? 'entry' : 'entries'}`)
+      if (pulled.moments > 0) parts.push(`pulled ${pulled.moments} ${pulled.moments === 1 ? 'moment' : 'moments'}`)
+      if (pushed.entries > 0) parts.push(`pushed ${pushed.entries} ${pushed.entries === 1 ? 'entry' : 'entries'}`)
+      if (pushed.moments > 0) parts.push(`pushed ${pushed.moments} ${pushed.moments === 1 ? 'moment' : 'moments'}`)
+      setSyncResult(parts.length > 0 ? parts.join(', ') : 'Already up to date')
     } catch {
       setSyncResult('Sync failed — check your connection')
     } finally {
@@ -60,7 +62,7 @@ export default function SettingsScreen() {
         <div className="rounded-[16px] bg-white dark:bg-[#1E1E1E] border border-[#E8E8E8] dark:border-[#2E2E2E] p-4 space-y-3">
           <p className="text-[11px] text-[#AAAAAA] uppercase tracking-wide">Sync</p>
           <p className="text-[13px] text-[#666666] dark:text-[#888888] leading-relaxed">
-            Pull your data from Google Drive. Use this when switching devices or after a period offline.
+            Push your data to Google Drive and pull any changes from other devices.
           </p>
           <button
             onClick={handleSync}

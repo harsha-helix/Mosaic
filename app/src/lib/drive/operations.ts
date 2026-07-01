@@ -19,6 +19,8 @@ import {
   saveEntry,
   getMoments,
   saveMoments,
+  getAllEntries,
+  getAllMomentRecords,
 } from '../db/queries'
 import {
   setFolderIds,
@@ -320,4 +322,52 @@ export async function hydrateToday(date: string): Promise<{
   }
 
   return { entry: finalEntry, moments: finalMoments }
+}
+
+// ─── Push all local data to Drive ─────────────────────────────────────────────
+
+/**
+ * Push all local IDB entries and moments to Drive.
+ * Uses the existing file index — if a file already exists on Drive it updates it,
+ * otherwise it creates it. Counterpart to syncFromDrive (which only pulls).
+ */
+export async function pushAllToDrive(): Promise<{ entries: number; moments: number }> {
+  if (!ENTRIES_FOLDER_ID || !MOMENTS_FOLDER_ID) return { entries: 0, moments: 0 }
+
+  const [allEntries, allMomentRecords] = await Promise.all([
+    getAllEntries(),
+    getAllMomentRecords(),
+  ])
+
+  let entries = 0
+  for (const entry of allEntries) {
+    try {
+      await pushEntry(entry)
+      entries++
+    } catch { /* skip failures */ }
+  }
+
+  let moments = 0
+  for (const { date, moments: ms } of allMomentRecords) {
+    if (ms.length === 0) continue
+    try {
+      await pushMoments(date, ms)
+      moments += ms.length
+    } catch { /* skip failures */ }
+  }
+
+  return { entries, moments }
+}
+
+/**
+ * Full bidirectional sync:
+ * 1. Refresh file index so we know what's on Drive
+ * 2. Pull from Drive and merge into local IDB
+ * 3. Push all local data back to Drive (so Drive has the merged result)
+ */
+export async function fullSync(): Promise<{ pulled: { entries: number; moments: number }; pushed: { entries: number; moments: number } }> {
+  await buildFileIndex()
+  const pulled = await syncFromDrive()
+  const pushed = await pushAllToDrive()
+  return { pulled, pushed }
 }

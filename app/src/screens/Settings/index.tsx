@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { silentSignIn } from '../../lib/drive/client'
+import { silentSignIn, signIn, getToken } from '../../lib/drive/client'
 import { fullSync, flushSyncQueue } from '../../lib/drive/operations'
 import { getPendingSyncItems } from '../../lib/db/queries'
 
@@ -28,6 +28,14 @@ export default function SettingsScreen() {
     setSyncResult(null)
     try {
       await silentSignIn()
+      if (!getToken()) {
+        // Silent reauth didn't produce a token (timed out or was refused).
+        // Don't report this as a generic failure — point at the fix.
+        setSyncResult('Not connected — tap "Reconnect Google Drive" below')
+        setSyncState('error')
+        setTimeout(() => setSyncState('idle'), 5000)
+        return
+      }
       const { pulled, pushed } = await fullSync()
       await flushSyncQueue()
       await refreshPendingCount()
@@ -41,6 +49,25 @@ export default function SettingsScreen() {
       setTimeout(() => setSyncState('idle'), 3000)
     } catch (e) {
       setSyncResult(e instanceof Error ? e.message : 'Sync failed — check your connection')
+      setSyncState('error')
+      setTimeout(() => setSyncState('idle'), 4000)
+    }
+  }
+
+  async function handleReconnect() {
+    setSyncState('syncing')
+    setSyncResult(null)
+    try {
+      await signIn() // interactive — shows Google's account picker, doesn't rely on the silent iframe flow
+      const { pulled, pushed } = await fullSync()
+      await flushSyncQueue()
+      await refreshPendingCount()
+      const total = pulled.entries + pulled.moments + pushed.entries + pushed.moments
+      setSyncResult(total > 0 ? 'Reconnected and synced' : 'Reconnected — already up to date')
+      setSyncState('done')
+      setTimeout(() => setSyncState('idle'), 3000)
+    } catch (e) {
+      setSyncResult(e instanceof Error ? e.message : 'Reconnect failed — try again')
       setSyncState('error')
       setTimeout(() => setSyncState('idle'), 4000)
     }
@@ -129,6 +156,17 @@ export default function SettingsScreen() {
               {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting to sync
             </p>
           )}
+
+          <button
+            onClick={handleReconnect}
+            disabled={syncState === 'syncing'}
+            className="w-full py-2.5 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] text-[#7C4DFF] font-medium text-[13px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+          >
+            Reconnect Google Drive
+          </button>
+          <p className="text-[11px] text-[#AAAAAA] text-center leading-relaxed">
+            If sync gets stuck on "Syncing…" with no result, background reconnect likely failed silently — this opens Google's sign-in directly.
+          </p>
         </div>
 
         {/* About */}

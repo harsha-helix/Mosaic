@@ -152,13 +152,36 @@ export async function searchFolder(name: string): Promise<Array<{ id: string; na
   )
 }
 
-/** Re-acquire a token silently. Never shows a popup. Resolves even on failure. */
+const SILENT_SIGNIN_TIMEOUT_MS = 8000
+
+/**
+ * Re-acquire a token silently. Never shows a popup. Resolves even on failure.
+ *
+ * GIS's `prompt: 'none'` flow depends on a hidden iframe round-trip with
+ * accounts.google.com. On mobile browsers this can simply never call back —
+ * no error, no success, just silence — most often because third-party
+ * storage/cookie access for that iframe is blocked. Without a timeout, every
+ * caller that does `await silentSignIn()` (app open, the online-reconnect
+ * handler, the three push sites, the Settings "Sync with Drive" button)
+ * would then hang forever, which looks exactly like "sync doesn't work" —
+ * no error is ever shown, the UI just never finishes. Bounding the wait
+ * turns a silent hang into a bounded, observable no-token state that the
+ * existing `driveIsSignedIn()` checks and push/catch paths already handle.
+ */
 export function silentSignIn(): Promise<void> {
   return new Promise((resolve) => {
     if (!_tokenClient) { resolve(); return }
+    let settled = false
+    const settle = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(settle, SILENT_SIGNIN_TIMEOUT_MS)
     _tokenClient.callback = (response) => {
       if (!response.error) _accessToken = response.access_token
-      resolve()
+      settle()
     }
     _tokenClient.requestAccessToken({ prompt: 'none' })
   })

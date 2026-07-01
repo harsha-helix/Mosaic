@@ -4,6 +4,7 @@ import { MOMENT_COLORS, MOMENT_EMOJIS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, g
 import { RememberToggle } from '../RememberToggle/RememberToggle'
 import { appendMoment } from '../../lib/db/queries'
 import { pushMoments, pushMedia } from '../../lib/drive/operations'
+import { silentSignIn } from '../../lib/drive/client'
 import { useTodayStore } from '../../store/today'
 
 const MOMENT_TYPES: MomentType[] = [
@@ -77,11 +78,15 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
     const updated = await appendMoment(date, moment)
     addMoment(moment)
 
-    pushMoments(date, updated).catch(console.warn)
+    silentSignIn()
+      .then(() => pushMoments(date, updated))
+      .catch(console.warn)
 
     if (photo) {
       const ext = photo.name.split('.').pop() ?? 'jpg'
-      pushMedia(id, photo, ext).catch(console.warn)
+      silentSignIn()
+        .then(() => pushMedia(id, photo!, ext))
+        .catch(console.warn)
     }
 
     onClose()

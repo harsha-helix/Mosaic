@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { clearFileIndex } from '../lib/db/queries'
+import { resetFolderIds } from '../lib/drive/fileIndex'
 
 const STORAGE_KEY = 'mosaic_auth'
 
@@ -25,6 +27,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   setSignedOut: () => {
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    // Clear IDB file index and in-memory folder IDs so the next onboarding starts fresh
+    clearFileIndex().catch(console.warn)
+    resetFolderIds()
     set({ isSignedIn: false, displayName: '' })
   },
 }))

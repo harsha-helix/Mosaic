@@ -55,3 +55,10 @@ export async function buildFileIndex(): Promise<void> {
 
   await Promise.all(writes)
 }
+
+export function resetFolderIds() {
+  MOSAIC_FOLDER_ID = null
+  ENTRIES_FOLDER_ID = null
+  MOMENTS_FOLDER_ID = null
+  MEDIA_FOLDER_ID = null
+}

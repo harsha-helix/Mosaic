@@ -90,3 +90,8 @@ export async function getAllMoments(): Promise<Moment[]> {
   const all = await db.getAll('moment')
   return all.flatMap(r => r.moments)
 }
+
+export async function clearFileIndex(): Promise<void> {
+  const db = await getDb()
+  await db.clear('fileIndex')
+}

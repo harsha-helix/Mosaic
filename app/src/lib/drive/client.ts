@@ -135,13 +135,21 @@ export async function createFolder(name: string, parentId?: string): Promise<str
   return data.id
 }
 
-/** Search Drive for folders matching a name. Used to find existing Mosaic root on new devices. */
+/**
+ * Search Drive for folders matching a name.
+ * NOTE: with drive.file scope, the q= name filter silently returns empty results.
+ * We must list all app-accessible files and filter client-side instead.
+ */
 export async function searchFolder(name: string): Promise<Array<{ id: string; name: string }>> {
-  const q = encodeURIComponent(`name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`)
-  const fields = encodeURIComponent('files(id,name)')
-  const res = await driveRequest('GET', DRIVE_API + '/files?q=' + q + '&fields=' + fields + '&pageSize=10')
-  const data = (await res.json()) as { files: Array<{ id: string; name: string }> }
-  return data.files
+  const fields = encodeURIComponent('files(id,name,mimeType)')
+  const res = await driveRequest(
+    'GET',
+    DRIVE_API + '/files?fields=' + fields + '&pageSize=1000&orderBy=createdTime'
+  )
+  const data = (await res.json()) as { files: Array<{ id: string; name: string; mimeType: string }> }
+  return data.files.filter(
+    f => f.name === name && f.mimeType === 'application/vnd.google-apps.folder'
+  )
 }
 
 /** Re-acquire a token silently. Never shows a popup. Resolves even on failure. */

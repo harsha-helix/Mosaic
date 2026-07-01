@@ -5,6 +5,7 @@ import { RememberToggle } from '../../components/RememberToggle/RememberToggle'
 import { useTodayStore } from '../../store/today'
 import { saveEntry, getEntry } from '../../lib/db/queries'
 import { pushEntry } from '../../lib/drive/operations'
+import { silentSignIn } from '../../lib/drive/client'
 import type { DailyEntry, EveningEntry } from '../../types'
 import { METRIC_COLORS } from '../../types'
 
@@ -119,7 +120,7 @@ export default function EveningScreen() {
 
     await saveEntry(updated)
     setEntry(updated)
-    pushEntry(updated).catch(console.warn)
+    silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
 
     setSaving(false)
     setCeremony(true)

@@ -4,6 +4,7 @@ import { MetricCircles } from '../../components/MetricCircles/MetricCircles'
 import { useTodayStore } from '../../store/today'
 import { saveEntry, getEntry } from '../../lib/db/queries'
 import { pushEntry } from '../../lib/drive/operations'
+import { silentSignIn } from '../../lib/drive/client'
 import type { DailyEntry, MorningEntry } from '../../types'
 import { METRIC_COLORS } from '../../types'
 
@@ -62,8 +63,8 @@ export default function MorningScreen() {
     await saveEntry(updated)
     setEntry(updated)
 
-    // Background Drive sync
-    pushEntry(updated).catch(console.warn)
+    // Background Drive sync — re-auth silently if needed (token obtained lazily here, not on reload)
+    silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
 
     navigate('/', { replace: true })
   }

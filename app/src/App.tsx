@@ -7,8 +7,7 @@ import { MomentCapture } from './components/MomentCapture/MomentCapture'
 import { useAuthStore } from './store/auth'
 import { useTodayStore } from './store/today'
 import { getEntry, getMoments, getFileId } from './lib/db/queries'
-import { fetchEntry, fetchMoments } from './lib/drive/operations'
-import { initAuth, silentSignIn } from './lib/drive/client'
+import { initAuth } from './lib/drive/client'
 import { setFolderIds } from './lib/drive/fileIndex'
 
 // Screens
@@ -80,20 +79,13 @@ function AppShell() {
       if (localMoments) setMoments(localMoments)
       setLoaded()
 
-      // 2. Silent Drive auth + background sync — never blocks UI
+      // 2. Restore Drive folder IDs for future saves — no popup, no auth needed
       try {
         await waitForGIS()
         initAuth(CLIENT_ID)
         await restoreFolderIds()
-        await silentSignIn()
-        const [driveEntry, driveMoments] = await Promise.all([
-          fetchEntry(date),
-          fetchMoments(date),
-        ])
-        if (driveEntry)          setEntry(driveEntry)
-        if (driveMoments.length) setMoments(driveMoments)
       } catch {
-        // Drive unavailable — local data is fine
+        // Drive setup failed — local data is fine
       }
     }
 

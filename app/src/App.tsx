@@ -7,8 +7,10 @@ import { MomentCapture } from './components/MomentCapture/MomentCapture'
 import { useAuthStore } from './store/auth'
 import { useTodayStore } from './store/today'
 import { getEntry, getMoments, getFileId } from './lib/db/queries'
-import { initAuth } from './lib/drive/client'
+import { initAuth, silentSignIn, isSignedIn as driveIsSignedIn } from './lib/drive/client'
 import { setFolderIds } from './lib/drive/fileIndex'
+import { hydrateToday } from './lib/drive/operations'
+import { useSyncStore } from './store/sync'
 
 // Screens
 import HomeScreen       from './screens/Home'
@@ -56,6 +58,7 @@ function AppShell() {
   const [hydrated, setHydrated] = useState(false)
   const isSignedIn = useAuthStore(s => s.isSignedIn)
   const { setEntry, setMoments, setLoaded } = useTodayStore()
+  const { setStatus, setSynced } = useSyncStore()
   const [showCapture, setShowCapture] = useState(false)
 
   useEffect(() => {
@@ -67,7 +70,7 @@ function AppShell() {
     const date = todayDate()
 
     async function init() {
-      // 1. Load IndexedDB immediately — no auth needed
+      // 1. Load IndexedDB immediately — show UI with local data right away
       const [localEntry, localMoments] = await Promise.all([
         getEntry(date),
         getMoments(date),
@@ -76,13 +79,33 @@ function AppShell() {
       if (localMoments) setMoments(localMoments)
       setLoaded()
 
-      // 2. Restore Drive folder IDs for future saves — no popup, no auth needed
+      // 2. Set up Drive auth + restore folder IDs (no popup)
       try {
         await waitForGIS()
         initAuth(CLIENT_ID)
         await restoreFolderIds()
       } catch {
-        // Drive setup failed — local data is fine
+        // Drive setup failed — local data is fine, skip sync
+        return
+      }
+
+      // 3. Background hydration: refresh file index + pull today from Drive
+      //    Silently acquires a token — never shows a popup.
+      //    If the token can't be refreshed (e.g. revoked), we just stay on local data.
+      try {
+        await silentSignIn()
+        if (!driveIsSignedIn()) return
+
+        setStatus('syncing')
+        const { entry: freshEntry, moments: freshMoments } = await hydrateToday(date)
+
+        // Update store if Drive had newer data
+        if (freshEntry)           setEntry(freshEntry)
+        if (freshMoments.length)  setMoments(freshMoments)
+
+        setSynced(new Date().toISOString())
+      } catch {
+        setStatus('error')
       }
     }
 

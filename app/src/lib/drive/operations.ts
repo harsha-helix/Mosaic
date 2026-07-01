@@ -246,6 +246,7 @@ export async function pullAllMoments(): Promise<number> {
 /**
  * Full sync from Drive: pull all entries + moments and merge into IndexedDB.
  * Safe to call on first load on a new device or after a period offline.
+ * Expensive — avoid calling on every app load. Use hydrateToday() instead.
  */
 export async function syncFromDrive(): Promise<{ entries: number; moments: number }> {
   const [entries, moments] = await Promise.all([
@@ -253,4 +254,60 @@ export async function syncFromDrive(): Promise<{ entries: number; moments: numbe
     pullAllMoments(),
   ])
   return { entries, moments }
+}
+
+/**
+ * Lightweight hydration for a returning session.
+ * 1. Refreshes the in-memory file index (3 folder listings = 3 API calls)
+ * 2. Fetches today's entry + moments from Drive and merges into IndexedDB
+ * 3. Returns the merged values so the caller can update the UI store
+ *
+ * Only touches today's files — safe to call on every app load.
+ */
+export async function hydrateToday(date: string): Promise<{
+  entry: DailyEntry | null
+  moments: Moment[]
+}> {
+  if (!ENTRIES_FOLDER_ID || !MOMENTS_FOLDER_ID || !MEDIA_FOLDER_ID) {
+    return { entry: null, moments: [] }
+  }
+
+  // Refresh file index so cross-device files are discoverable
+  await buildFileIndex()
+
+  // Fetch today from Drive (returns null/[] if file doesn't exist yet)
+  const [remoteEntry, remoteMoments] = await Promise.all([
+    fetchEntry(date),
+    fetchMoments(date),
+  ])
+
+  // Merge remote entry with whatever is already in IDB
+  let finalEntry: DailyEntry | null = null
+  if (remoteEntry) {
+    const localEntry = await getEntry(date)
+    const merged = mergeEntry(localEntry, remoteEntry)
+    // Only write back if something changed
+    if (JSON.stringify(merged) !== JSON.stringify(localEntry)) {
+      await saveEntry(merged)
+    }
+    finalEntry = merged
+  }
+
+  // Merge remote moments with local by id (union)
+  let finalMoments: Moment[] = []
+  if (remoteMoments.length > 0) {
+    const localMoments = await getMoments(date)
+    const localIds = new Set(localMoments.map(m => m.id))
+    const newMoments = remoteMoments.filter(m => !localIds.has(m.id))
+    if (newMoments.length > 0) {
+      finalMoments = [...localMoments, ...newMoments].sort((a, b) =>
+        a.captured_at.localeCompare(b.captured_at)
+      )
+      await saveMoments(date, finalMoments)
+    } else {
+      finalMoments = localMoments
+    }
+  }
+
+  return { entry: finalEntry, moments: finalMoments }
 }

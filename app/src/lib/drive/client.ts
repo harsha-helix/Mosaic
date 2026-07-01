@@ -44,6 +44,8 @@ export function isSignedIn(): boolean { return _accessToken !== null }
 
 // Drive helpers
 
+const DRIVE_REQUEST_TIMEOUT_MS = 15000
+
 async function driveRequest(
   method: string,
   url: string,
@@ -51,11 +53,27 @@ async function driveRequest(
   extraHeaders?: Record<string, string>
 ): Promise<Response> {
   if (!_accessToken) throw new Error('Not authenticated')
-  const res = await fetch(url, {
-    method,
-    headers: { Authorization: 'Bearer ' + _accessToken, ...extraHeaders },
-    body,
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), DRIVE_REQUEST_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { Authorization: 'Bearer ' + _accessToken, ...extraHeaders },
+      body,
+      signal: controller.signal,
+    })
+  } catch (e) {
+    // A flaky mobile connection or captive portal can leave a fetch pending
+    // forever with no error and no response — AbortController turns that
+    // into a real, catchable failure instead of a silent hang.
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('Drive request timed out — check your connection')
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
   if (res.status === 401) { _accessToken = null; throw new Error('Token expired') }
   if (!res.ok) { const text = await res.text(); throw new Error('Drive API error ' + res.status + ': ' + text) }
   return res

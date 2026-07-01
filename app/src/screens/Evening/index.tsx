@@ -36,7 +36,7 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
       }
     }, 400)
     return () => clearInterval(interval)
-  })
+  }, [])
 
   return (
     <div className="fixed inset-0 z-50 bg-[#141414] flex flex-col items-center justify-center px-8">
@@ -72,22 +72,22 @@ export default function EveningScreen() {
   const navigate = useNavigate()
   const { setEntry } = useTodayStore()
 
-  const [spark, setSpark] = useState<number | undefined>()
-  const [mood, setMood]   = useState<number | undefined>()
-  const [exerciseDone, setExerciseDone] = useState<boolean | null>(null)
-  const [exerciseMins, setExerciseMins] = useState('')
-  const [readingMins, setReadingMins]   = useState('')
-  const [deepWorkHrs, setDeepWorkHrs]   = useState('')
+  const [spark, setSpark]                   = useState<number | undefined>()
+  const [mood, setMood]                     = useState<number | undefined>()
+  const [exerciseDone, setExerciseDone]     = useState<boolean | null>(null)
+  const [exerciseMins, setExerciseMins]     = useState('')
+  const [readingMins, setReadingMins]       = useState('')
+  const [deepWorkHrs, setDeepWorkHrs]       = useState('')
   const [biggestWin, setBiggestWin]         = useState('')
   const [biggestChallenge, setBiggestChallenge] = useState('')
-  const [energisedBy, setEnergisedBy]   = useState('')
-  const [drainedBy, setDrainedBy]       = useState('')
-  const [journal, setJournal]           = useState('')
-  const [dayTitle, setDayTitle]         = useState('')
-  const [commitMsg, setCommitMsg]       = useState('')
-  const [remember, setRemember]         = useState(false)
-  const [saving, setSaving]             = useState(false)
-  const [ceremony, setCeremony]         = useState(false)
+  const [energisedBy, setEnergisedBy]       = useState('')
+  const [drainedBy, setDrainedBy]           = useState('')
+  const [journal, setJournal]               = useState('')
+  const [dayTitle, setDayTitle]             = useState('')
+  const [commitMsg, setCommitMsg]           = useState('')
+  const [remember, setRemember]             = useState(false)
+  const [saving, setSaving]                 = useState(false)
+  const [ceremony, setCeremony]             = useState(false)
 
   async function handleCommit() {
     setSaving(true)
@@ -120,6 +120,8 @@ export default function EveningScreen() {
 
     await saveEntry(updated)
     setEntry(updated)
+
+    // Background Drive sync — token obtained lazily here, not on reload
     silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
 
     setSaving(false)
@@ -188,8 +190,8 @@ export default function EveningScreen() {
         </div>
 
         {[
-          { label: 'Reading', value: readingMins, set: setReadingMins, unit: 'minutes' },
-          { label: 'Deep Work', value: deepWorkHrs, set: setDeepWorkHrs, unit: 'hours' },
+          { label: 'Reading',   value: readingMins, set: setReadingMins, unit: 'minutes' },
+          { label: 'Deep Work', value: deepWorkHrs, set: setDeepWorkHrs, unit: 'hours'   },
         ].map(({ label, value, set, unit }) => (
           <div key={label} className="space-y-2">
             <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{label}</label>

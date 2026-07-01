@@ -23,10 +23,10 @@ export default function MorningScreen() {
   const prevEveningHasSleep = !!entry?.evening?.sleep_hours
   const showSleep = !!entry?.evening?.submitted_at && !prevEveningHasSleep
 
-  const [sleep, setSleep]       = useState<string>('')
-  const [mood, setMood]         = useState<number | undefined>()
-  const [energy, setEnergy]     = useState<number | undefined>()
-  const [anxiety, setAnxiety]   = useState<number | undefined>()
+  const [sleep, setSleep]           = useState<string>('')
+  const [mood, setMood]             = useState<number | undefined>()
+  const [energy, setEnergy]         = useState<number | undefined>()
+  const [anxiety, setAnxiety]       = useState<number | undefined>()
   const [excitement, setExcitement] = useState<number | undefined>()
   const [intention, setIntention]   = useState('')
   const [priority, setPriority]     = useState('')
@@ -48,13 +48,11 @@ export default function MorningScreen() {
       ...(notice.trim()    && { notice: notice.trim() }),
     }
 
-    // Load existing entry to preserve evening data
     const existing = await getEntry(date)
     const updated: DailyEntry = {
       ...(existing ?? { date }),
       date,
       morning,
-      // If sleep was entered, write it back into prev evening
       ...(showSleep && sleep ? {
         evening: { ...entry?.evening, sleep_hours: parseFloat(sleep) } as DailyEntry['evening'],
       } : {}),
@@ -63,7 +61,7 @@ export default function MorningScreen() {
     await saveEntry(updated)
     setEntry(updated)
 
-    // Background Drive sync — re-auth silently if needed (token obtained lazily here, not on reload)
+    // Background Drive sync — token obtained lazily here, not on reload
     silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
 
     navigate('/', { replace: true })
@@ -71,30 +69,19 @@ export default function MorningScreen() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
-      {/* Header */}
       <div className="flex items-center gap-4 px-4 pt-14 pb-4">
-        <button
-          onClick={() => navigate('/')}
-          className="text-[#7C4DFF] text-[15px] font-medium"
-        >
-          ←
-        </button>
+        <button onClick={() => navigate('/')} className="text-[#7C4DFF] text-[15px] font-medium">←</button>
         <div>
-          <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">
-            Morning
-          </h1>
+          <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Morning</h1>
           <p className="text-[13px] text-[#AAAAAA]">{todayLabel()}</p>
         </div>
       </div>
 
       <div className="px-4 pb-24 space-y-6">
-        {/* Sleep (conditional) */}
         {showSleep && (
           <div className="space-y-2">
             <p className="text-[13px] text-[#AAAAAA]">Sleep from last night</p>
-            <p className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">
-              How long did you sleep?
-            </p>
+            <p className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">How long did you sleep?</p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
@@ -112,7 +99,6 @@ export default function MorningScreen() {
           </div>
         )}
 
-        {/* Metrics */}
         <MetricCircles label="Mood"       value={mood}       onChange={setMood}       color={METRIC_COLORS.mood} />
         <MetricCircles label="Energy"     value={energy}     onChange={setEnergy}     color={METRIC_COLORS.energy} />
         <MetricCircles label="Anxiety"    value={anxiety}    onChange={setAnxiety}    color={METRIC_COLORS.anxiety} />
@@ -120,7 +106,6 @@ export default function MorningScreen() {
 
         <hr className="border-[#E8E8E8] dark:border-[#2E2E2E]" />
 
-        {/* Text fields */}
         {[
           { label: "Today's intention", value: intention, set: setIntention, placeholder: "What do you want to do today?" },
           { label: "Today's priority",  value: priority,  set: setPriority,  placeholder: "The one thing that matters most" },
@@ -138,7 +123,6 @@ export default function MorningScreen() {
           </div>
         ))}
 
-        {/* Save */}
         <button
           onClick={handleSave}
           disabled={saving}

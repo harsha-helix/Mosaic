@@ -53,14 +53,11 @@ async function restoreFolderIds(): Promise<void> {
 }
 
 function AppShell() {
-  // hydrated: true once we've confirmed auth state from localStorage
-  // prevents a flash of onboarding before the store reads localStorage
   const [hydrated, setHydrated] = useState(false)
   const isSignedIn = useAuthStore(s => s.isSignedIn)
   const { setEntry, setMoments, setLoaded } = useTodayStore()
   const [showCapture, setShowCapture] = useState(false)
 
-  // Confirm auth state on first tick, then load data
   useEffect(() => {
     setHydrated(true)
   }, [])
@@ -70,7 +67,7 @@ function AppShell() {
     const date = todayDate()
 
     async function init() {
-      // 1. Load IndexedDB immediately
+      // 1. Load IndexedDB immediately — no auth needed
       const [localEntry, localMoments] = await Promise.all([
         getEntry(date),
         getMoments(date),
@@ -92,7 +89,7 @@ function AppShell() {
     init()
   }, [isSignedIn])
 
-  // Show nothing for one tick while localStorage hydrates
+  // Hold one tick while localStorage hydrates to prevent onboarding flash
   if (!hydrated) return null
 
   if (!isSignedIn) {

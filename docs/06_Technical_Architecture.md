@@ -102,9 +102,12 @@ Read from IndexedDB (instant — shown immediately)
 
 ### Sync strategy
 
-- **On app open:** compare `meta.json → last_synced_at` against IndexedDB state. Pull any files modified after last sync.
-- **On write:** push immediately if online; queue if offline.
-- **Conflict rule (MVP):** Drive wins. If Drive has a newer version of a file than IndexedDB, Drive overwrites local. This is safe because Mosaic is single-user and single-device for MVP.
+Full detail (triggers, retry queue, coalescing algorithm) lives in [`09_Sync_Architecture.md`](./09_Sync_Architecture.md). Summary:
+
+- **On app open (every time):** `hydrateToday()` pulls + merges just today's entry and moments.
+- **On app open (periodic):** a full-history pull + merge runs if `meta.last_synced_at` is more than 6 hours old.
+- **On write:** push immediately if online; on failure, enqueue to the IndexedDB retry queue and flush automatically on the next app open or `online` event.
+- **Conflict rule:** merge, not overwrite. Daily entries merge per-section (`morning`/`evening`, newer `submitted_at` wins); moments merge by union on `id`. Mosaic is single-user but multi-device — a phone and a laptop can both write and neither one silently clobbers the other.
 
 ---
 
@@ -344,8 +347,7 @@ VITE_FIREBASE_APP_ID=...
 
 ## Out of Scope (MVP)
 
-- Multi-device sync conflict resolution
-- Offline write queue UI (errors handled silently with retry)
+- Offline write queue UI (queue exists and retries automatically per [`09_Sync_Architecture.md`](./09_Sync_Architecture.md); no user-facing screen to inspect/replay it beyond a pending-count in Settings)
 - Desktop-specific layout (responsive Tailwind handles basic desktop)
 - AI / embeddings pipeline
 - Android widget

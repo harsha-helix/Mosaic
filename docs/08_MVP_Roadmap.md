@@ -68,7 +68,7 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
   - Remember this day toggle
   - Saves to `entries/YYYY-MM-DD.json`
 - [x] **Commit ceremony animation** — terminal type-out + confetti → Home
-- [x] **Drive sync** — IndexedDB-first on load, background Drive fetch + push on every save
+- [x] **Drive sync (baseline)** — IndexedDB-first on load, background Drive fetch + push on every save. Hardening (retry queue, periodic multi-device pull) tracked separately in Phase 2.5 below.
 
 **Done when:** A full day can be logged (morning → moments → evening) and the data appears correctly in the Mosaic Drive folder.
 
@@ -104,6 +104,22 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 - [x] **Dark mode** — Tailwind `dark:` variants applied across all screens
 
 **Done when:** You can open the app, look back at any past day, scroll your highlights, and search for any moment you've logged.
+
+---
+
+## Phase 2.5 — Sync Hardening ✅ Complete (2026-07-01)
+**Goal:** Close the gap between what `06_Technical_Architecture.md` describes and what's actually running. Decision record: [`09_Sync_Architecture.md`](./09_Sync_Architecture.md).
+
+- [x] Field-level merge on entries (`morning`/`evening` by `submitted_at`) — already built, confirmed correct
+- [x] Union-by-id merge on moments — already built, confirmed correct
+- [x] Widen `syncQueue` schema to accept `Blob` payloads (photo uploads currently can't be queued)
+- [x] Wire `enqueueSyncItem` into the three push sites (`pushEntry`, `pushMoments`, `pushMedia`) on failure — currently swallowed via `console.warn`
+- [x] `flushSyncQueue()` — coalesce by path, replay newest-per-path, drop after 5 failed retries
+- [x] Call `flushSyncQueue()` on app open and on `window`'s `online` event
+- [x] Periodic full-history sync on app open when `meta.last_synced_at` is older than 6 hours
+- [x] Settings screen shows a pending-sync-item count when the queue is non-empty
+
+**Done when:** an offline write survives a close/reopen and lands on Drive without a manual tap, and a second device's changes surface within 6 hours without one either. ✅ `npm run build` passes clean.
 
 ---
 
@@ -154,7 +170,6 @@ These are intentionally out of scope until after the 30-day success metric is hi
 | Export / data portability | Drive folder is already the export |
 | Water tracking | Optional, low priority |
 | Themes / accent picker | Default palette is strong enough |
-| Multi-device conflict resolution | Single device for MVP |
 
 ---
 
@@ -167,9 +182,22 @@ Phase 1 — Daily Loop        ✅ complete
     ↓
 Phase 2 — Browse & Reflect  ✅ complete
     ↓
+Phase 2.5 — Sync Hardening  ✅ complete
+    ↓
 Phase 3 — Insights          ← next  (data pays off)
     ↓
 Phase 4 — Notifications     (fully automatic)
 ```
 
 Start Phase 4 last — Firebase is the least familiar piece. By then the app is already working and the notifications are an enhancement, not a dependency.
+
+---
+
+## Known Issues / Follow-ups
+
+Found during Phase 2.5 sync hardening. Not blocking, but worth fixing before they bite:
+
+| Issue | Where | Why it matters |
+|---|---|---|
+| Onboarding lets you set custom morning/evening notification times, but `bootstrapDrive()` hardcodes `08:00`/`21:00` into `meta.json` on first write instead of using what you entered. Your chosen times are silently dropped. | `lib/drive/operations.ts` (`bootstrapDrive`), `screens/Onboarding/index.tsx` | Will surface as a real bug once Phase 4 notifications read `meta.json` for schedule times — the Cloud Function would fire at the wrong hour. Fix before starting Phase 4. |
+| `listFolder()` / `searchFolder()` request `pageSize=1000` with no page-token loop — Drive API results beyond 1000 files in a single folder are silently dropped. | `lib/drive/client.ts` | At one `entries/` file and up to a handful of `moments/` files per day, this is years away. But it means sync (and the "search Drive for existing Mosaic folder" bootstrap logic) will quietly stop seeing older files once any folder crosses 1000 items, with no error to signal it. Cheap to fix later with a `pageToken` loop — flagging now so it doesn't get forgotten. |

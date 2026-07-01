@@ -21,7 +21,11 @@ import {
   saveMoments,
   getAllEntries,
   getAllMomentRecords,
+  getPendingSyncItems,
+  removeSyncItem,
+  updateSyncItemRetries,
 } from '../db/queries'
+import type { SyncQueueItem } from '../db/schema'
 import {
   setFolderIds,
   buildFileIndex,
@@ -366,4 +370,99 @@ export async function fullSync(): Promise<{ pulled: { entries: number; moments: 
   const pulled = await syncFromDrive()
   const pushed = await pushAllToDrive()
   return { pulled, pushed }
+}
+
+// ─── Retry queue ──────────────────────────────────────────────────────────────
+
+const MAX_SYNC_RETRIES = 5
+
+/**
+ * Replay a single queued item via the matching push function.
+ *
+ * For 'entry'/'moments', push whatever IndexedDB holds *now* for that date —
+ * not the stale JSON snapshot captured when the item was queued. Between
+ * queuing and flushing, a hydrateToday()/periodic sync may have merged in
+ * newer remote data (e.g. another device's evening section) and written
+ * that merge back to IndexedDB. Replaying the old snapshot would overwrite
+ * Drive with a whole-file write that doesn't include that merge, silently
+ * losing it. The payload is only a fallback for the (rare) case the local
+ * record has since been deleted.
+ */
+async function replaySyncItem(item: SyncQueueItem): Promise<void> {
+  switch (item.operation) {
+    case 'entry': {
+      const date = item.path.replace('entries/', '').replace('.json', '')
+      const current = await getEntry(date)
+      const entry = current ?? (JSON.parse(item.payload as string) as DailyEntry)
+      await pushEntry(entry)
+      return
+    }
+    case 'moments': {
+      const date = item.path.replace('moments/', '').replace('.json', '')
+      const current = await getMoments(date)
+      const moments = current.length > 0 ? current : (JSON.parse(item.payload as string) as Moment[])
+      await pushMoments(date, moments)
+      return
+    }
+    case 'media': {
+      const filename = item.path.replace('media/', '')
+      const dot = filename.lastIndexOf('.')
+      const id = dot >= 0 ? filename.slice(0, dot) : filename
+      const ext = dot >= 0 ? filename.slice(dot + 1) : 'jpg'
+      await pushMedia(id, item.payload as Blob, ext)
+      return
+    }
+  }
+}
+
+/**
+ * Replay everything in the offline retry queue.
+ * 1. Coalesce: group queued items by `path`, keep only the newest `created_at`
+ *    per path (entry/moment pushes are whole-file overwrites, so stale
+ *    intermediate versions are dropped, not replayed).
+ * 2. Replay survivors oldest-first via the matching push function.
+ * 3. On success, remove from the queue. On failure, bump `retries`;
+ *    once `retries` reaches 5, drop the item (it's not retried forever).
+ *
+ * Safe to call repeatedly — a no-op when the queue is empty.
+ */
+export async function flushSyncQueue(): Promise<{ flushed: number; dropped: number }> {
+  const items = await getPendingSyncItems()
+  if (items.length === 0) return { flushed: 0, dropped: 0 }
+
+  const newestByPath = new Map<string, SyncQueueItem>()
+  for (const item of items) {
+    const current = newestByPath.get(item.path)
+    if (!current || item.created_at > current.created_at) {
+      if (current) await removeSyncItem(current.id)
+      newestByPath.set(item.path, item)
+    } else {
+      await removeSyncItem(item.id)
+    }
+  }
+
+  const survivors = Array.from(newestByPath.values()).sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  )
+
+  let flushed = 0
+  let dropped = 0
+
+  for (const item of survivors) {
+    try {
+      await replaySyncItem(item)
+      await removeSyncItem(item.id)
+      flushed++
+    } catch {
+      const retries = item.retries + 1
+      if (retries >= MAX_SYNC_RETRIES) {
+        await removeSyncItem(item.id)
+        dropped++
+      } else {
+        await updateSyncItemRetries(item.id, retries)
+      }
+    }
+  }
+
+  return { flushed, dropped }
 }

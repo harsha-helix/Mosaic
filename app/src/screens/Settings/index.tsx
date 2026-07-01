@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { silentSignIn } from '../../lib/drive/client'
-import { fullSync } from '../../lib/drive/operations'
+import { fullSync, flushSyncQueue } from '../../lib/drive/operations'
+import { getPendingSyncItems } from '../../lib/db/queries'
 
 type SyncState = 'idle' | 'syncing' | 'done' | 'error'
 
@@ -11,6 +12,16 @@ export default function SettingsScreen() {
   const { displayName, setSignedOut } = useAuthStore()
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncResult, setSyncResult] = useState<string | null>(null)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const refreshPendingCount = useCallback(async () => {
+    const items = await getPendingSyncItems()
+    setPendingCount(items.length)
+  }, [])
+
+  useEffect(() => {
+    refreshPendingCount()
+  }, [refreshPendingCount])
 
   async function handleSync() {
     setSyncState('syncing')
@@ -18,6 +29,8 @@ export default function SettingsScreen() {
     try {
       await silentSignIn()
       const { pulled, pushed } = await fullSync()
+      await flushSyncQueue()
+      await refreshPendingCount()
       const parts: string[] = []
       if (pulled.entries > 0)  parts.push(`↓ ${pulled.entries} ${pulled.entries === 1 ? 'entry' : 'entries'}`)
       if (pulled.moments > 0)  parts.push(`↓ ${pulled.moments} ${pulled.moments === 1 ? 'moment' : 'moments'}`)
@@ -108,6 +121,12 @@ export default function SettingsScreen() {
               style={{ color: syncState === 'error' ? '#EF4444' : '#666666' }}
             >
               {syncResult}
+            </p>
+          )}
+
+          {pendingCount > 0 && (
+            <p className="text-[13px] text-center text-[#F59E0B]">
+              {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting to sync
             </p>
           )}
         </div>

@@ -9,7 +9,7 @@ import { useTodayStore } from './store/today'
 import { getEntry, getMoments, getFileId } from './lib/db/queries'
 import { initAuth, silentSignIn, isSignedIn as driveIsSignedIn } from './lib/drive/client'
 import { setFolderIds } from './lib/drive/fileIndex'
-import { hydrateToday } from './lib/drive/operations'
+import { hydrateToday, flushSyncQueue, syncFromDrive, fetchMeta, pushMeta } from './lib/drive/operations'
 import { useSyncStore } from './store/sync'
 
 // Screens
@@ -24,6 +24,7 @@ import SettingsScreen   from './screens/Settings'
 import OnboardingScreen from './screens/Onboarding'
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
@@ -103,6 +104,18 @@ function AppShell() {
         if (freshEntry)           setEntry(freshEntry)
         if (freshMoments.length)  setMoments(freshMoments)
 
+        // Replay anything queued from a previous offline session
+        await flushSyncQueue()
+
+        // Periodic full-history sync: catches an older edit from a second
+        // device without hitting Drive on every single open.
+        const meta = await fetchMeta()
+        const lastSyncedMs = meta?.last_synced_at ? new Date(meta.last_synced_at).getTime() : 0
+        if (Date.now() - lastSyncedMs > SIX_HOURS_MS) {
+          await syncFromDrive()
+          if (meta) await pushMeta(meta)
+        }
+
         setSynced(new Date().toISOString())
       } catch {
         setStatus('error')
@@ -111,6 +124,18 @@ function AppShell() {
 
     init()
   }, [isSignedIn])
+
+  // Reconnect: flush anything queued while offline, without waiting for
+  // the next full app open.
+  useEffect(() => {
+    function handleOnline() {
+      silentSignIn()
+        .then(() => { if (driveIsSignedIn()) return flushSyncQueue() })
+        .catch(() => {})
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
 
   // Hold one tick while localStorage hydrates to prevent onboarding flash
   if (!hydrated) return null

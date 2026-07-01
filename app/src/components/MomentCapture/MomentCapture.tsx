@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { MomentType } from '../../types'
 import { MOMENT_COLORS, MOMENT_EMOJIS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId } from '../../types'
 import { RememberToggle } from '../RememberToggle/RememberToggle'
-import { appendMoment } from '../../lib/db/queries'
+import { appendMoment, enqueueSyncItem } from '../../lib/db/queries'
 import { pushMoments, pushMedia } from '../../lib/drive/operations'
 import { silentSignIn } from '../../lib/drive/client'
 import { useTodayStore } from '../../store/today'
@@ -78,15 +78,16 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
     const updated = await appendMoment(date, moment)
     addMoment(moment)
 
+    // On failure, queue for retry on next app open / reconnect.
     silentSignIn()
       .then(() => pushMoments(date, updated))
-      .catch(console.warn)
+      .catch(() => enqueueSyncItem('moments', 'moments/' + date + '.json', JSON.stringify(updated)))
 
     if (photo) {
       const ext = photo.name.split('.').pop() ?? 'jpg'
       silentSignIn()
         .then(() => pushMedia(id, photo!, ext))
-        .catch(console.warn)
+        .catch(() => enqueueSyncItem('media', 'media/' + id + '.' + ext, photo!))
     }
 
     onClose()

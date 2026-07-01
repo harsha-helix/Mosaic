@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MetricCircles } from '../../components/MetricCircles/MetricCircles'
 import { useTodayStore } from '../../store/today'
-import { saveEntry, getEntry } from '../../lib/db/queries'
+import { saveEntry, getEntry, enqueueSyncItem } from '../../lib/db/queries'
 import { pushEntry } from '../../lib/drive/operations'
 import { silentSignIn } from '../../lib/drive/client'
 import type { DailyEntry, MorningEntry } from '../../types'
@@ -61,8 +61,11 @@ export default function MorningScreen() {
     await saveEntry(updated)
     setEntry(updated)
 
-    // Background Drive sync — token obtained lazily here, not on reload
-    silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
+    // Background Drive sync — token obtained lazily here, not on reload.
+    // On failure, queue it for retry on next app open / reconnect.
+    silentSignIn()
+      .then(() => pushEntry(updated))
+      .catch(() => enqueueSyncItem('entry', 'entries/' + updated.date + '.json', JSON.stringify(updated)))
 
     navigate('/', { replace: true })
   }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { MetricCircles } from '../../components/MetricCircles/MetricCircles'
 import { RememberToggle } from '../../components/RememberToggle/RememberToggle'
 import { useTodayStore } from '../../store/today'
-import { saveEntry, getEntry } from '../../lib/db/queries'
+import { saveEntry, getEntry, enqueueSyncItem } from '../../lib/db/queries'
 import { pushEntry } from '../../lib/drive/operations'
 import { silentSignIn } from '../../lib/drive/client'
 import type { DailyEntry, EveningEntry } from '../../types'
@@ -121,8 +121,11 @@ export default function EveningScreen() {
     await saveEntry(updated)
     setEntry(updated)
 
-    // Background Drive sync — token obtained lazily here, not on reload
-    silentSignIn().then(() => pushEntry(updated)).catch(console.warn)
+    // Background Drive sync — token obtained lazily here, not on reload.
+    // On failure, queue it for retry on next app open / reconnect.
+    silentSignIn()
+      .then(() => pushEntry(updated))
+      .catch(() => enqueueSyncItem('entry', 'entries/' + updated.date + '.json', JSON.stringify(updated)))
 
     setSaving(false)
     setCeremony(true)

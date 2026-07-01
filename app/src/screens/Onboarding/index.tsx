@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { initAuth, signIn } from '../../lib/drive/client'
-import { bootstrapDrive } from '../../lib/drive/operations'
+import { bootstrapDrive, syncFromDrive } from '../../lib/drive/operations'
 import { useAuthStore } from '../../store/auth'
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
@@ -23,6 +23,8 @@ export default function OnboardingScreen() {
       initAuth(CLIENT_ID)
       await signIn()
       await bootstrapDrive(name.trim())
+      // Pull any existing data from Drive (no-op on first device, restores history on new device)
+      await syncFromDrive()
       setSignedIn(name.trim())
       navigate('/', { replace: true })
     } catch (e) {

@@ -9,11 +9,16 @@ import {
   uploadMedia as uploadMediaFile,
   createFolder,
   listFolder,
+  searchFolder,
   getToken,
 } from './client'
 import {
   getFileId,
   setFileId,
+  getEntry,
+  saveEntry,
+  getMoments,
+  saveMoments,
 } from '../db/queries'
 import {
   setFolderIds,
@@ -32,15 +37,21 @@ const ROOT_NAME = 'Mosaic'
 /**
  * Find or create the Mosaic/ folder hierarchy in Drive and populate
  * the file index from IndexedDB + the Drive listing.
+ * Safe to call on a new device — searches Drive for existing data first.
  */
 export async function bootstrapDrive(displayName: string): Promise<void> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
 
-  // 1. Find or create root folder
+  // 1. Find or create root folder — search Drive first for cross-device support
   let mosaicId = await getFileId('__mosaic_root__')
   if (!mosaicId) {
-    mosaicId = await createFolder(ROOT_NAME)
+    const existing = await searchFolder(ROOT_NAME)
+    if (existing.length > 0) {
+      mosaicId = existing[0].id
+    } else {
+      mosaicId = await createFolder(ROOT_NAME)
+    }
     await setFileId('__mosaic_root__', mosaicId)
   }
 
@@ -78,7 +89,7 @@ export async function bootstrapDrive(displayName: string): Promise<void> {
     await setFileId('meta.json', metaId)
   }
 
-  // 4. Build file index from Drive
+  // 4. Build file index from Drive listing
   await buildFileIndex()
 }
 
@@ -152,4 +163,94 @@ export async function pushMeta(meta: Meta): Promise<void> {
   const updated = { ...meta, last_synced_at: new Date().toISOString() }
   const newId = await writeFile('meta.json', updated, MOSAIC_FOLDER_ID, existingId)
   await setFileId('meta.json', newId)
+}
+
+// ─── Cross-device sync ────────────────────────────────────────────────────────
+
+/**
+ * Merge two DailyEntry records: take the more recently submitted section from each.
+ * Morning and evening are merged independently so partial edits from two devices combine.
+ */
+function mergeEntry(local: DailyEntry | undefined, remote: DailyEntry): DailyEntry {
+  if (!local) return remote
+  const merged: DailyEntry = { ...local }
+  if (remote.morning?.submitted_at && remote.morning.submitted_at > (local.morning?.submitted_at ?? '')) {
+    merged.morning = remote.morning
+  }
+  if (remote.evening?.submitted_at && remote.evening.submitted_at > (local.evening?.submitted_at ?? '')) {
+    merged.evening = remote.evening
+  }
+  return merged
+}
+
+/**
+ * Pull all entries from Drive and merge into IndexedDB.
+ * Returns count of entries that were updated or newly created.
+ */
+export async function pullAllEntries(): Promise<number> {
+  if (!ENTRIES_FOLDER_ID) return 0
+  const files = await listFolder(ENTRIES_FOLDER_ID)
+  let count = 0
+  for (const file of files) {
+    if (!file.name.endsWith('.json')) continue
+    try {
+      const date = file.name.replace('.json', '')
+      const [local, remote] = await Promise.all([
+        getEntry(date),
+        readFile<DailyEntry>(file.id),
+      ])
+      const merged = mergeEntry(local, remote)
+      if (JSON.stringify(merged) !== JSON.stringify(local)) {
+        await saveEntry(merged)
+        count++
+      }
+    } catch {
+      // Skip files that fail to download or parse
+    }
+  }
+  return count
+}
+
+/**
+ * Pull all moments from Drive and merge into IndexedDB (union by id).
+ * Returns count of new moments added.
+ */
+export async function pullAllMoments(): Promise<number> {
+  if (!MOMENTS_FOLDER_ID) return 0
+  const files = await listFolder(MOMENTS_FOLDER_ID)
+  let count = 0
+  for (const file of files) {
+    if (!file.name.endsWith('.json')) continue
+    try {
+      const date = file.name.replace('.json', '')
+      const [local, remote] = await Promise.all([
+        getMoments(date),
+        readFile<Moment[]>(file.id),
+      ])
+      const localIds = new Set(local.map(m => m.id))
+      const newMoments = remote.filter(m => !localIds.has(m.id))
+      if (newMoments.length > 0) {
+        const merged = [...local, ...newMoments].sort((a, b) =>
+          a.captured_at.localeCompare(b.captured_at)
+        )
+        await saveMoments(date, merged)
+        count += newMoments.length
+      }
+    } catch {
+      // Skip files that fail to download or parse
+    }
+  }
+  return count
+}
+
+/**
+ * Full sync from Drive: pull all entries + moments and merge into IndexedDB.
+ * Safe to call on first load on a new device or after a period offline.
+ */
+export async function syncFromDrive(): Promise<{ entries: number; moments: number }> {
+  const [entries, moments] = await Promise.all([
+    pullAllEntries(),
+    pullAllMoments(),
+  ])
+  return { entries, moments }
 }

@@ -135,6 +135,15 @@ export async function createFolder(name: string, parentId?: string): Promise<str
   return data.id
 }
 
+/** Search Drive for folders matching a name. Used to find an existing Mosaic root on new devices. */
+export async function searchFolder(name: string): Promise<Array<{ id: string; name: string }>> {
+  const q = encodeURIComponent(`name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`)
+  const fields = encodeURIComponent('files(id,name)')
+  const res = await driveRequest('GET', DRIVE_API + '/files?q=' + q + '&fields=' + fields + '&pageSize=10')
+  const data = (await res.json()) as { files: Array<{ id: string; name: string }> }
+  return data.files
+}
+
 /** Re-acquire a token silently on reload. Never shows a popup. Resolves even on failure. */
 export function silentSignIn(): Promise<void> {
   return new Promise((resolve) => {

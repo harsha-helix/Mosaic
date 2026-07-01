@@ -45,6 +45,16 @@ export async function bootstrapDrive(displayName: string): Promise<void> {
 
   // 1. Find or create root folder — search Drive first for cross-device support
   let mosaicId = await getFileId('__mosaic_root__')
+  if (mosaicId) {
+    // Verify the stored ID still exists on Drive — it may have been deleted
+    try {
+      await listFolder(mosaicId)
+    } catch {
+      // Stale ID (404 or other error) — fall through to search/create
+      mosaicId = undefined
+      await setFileId('__mosaic_root__', '')
+    }
+  }
   if (!mosaicId) {
     const existing = await searchFolder(ROOT_NAME)
     if (existing.length > 0) {

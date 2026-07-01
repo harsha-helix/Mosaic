@@ -4,28 +4,32 @@ import { useAuthStore } from '../../store/auth'
 import { silentSignIn } from '../../lib/drive/client'
 import { fullSync } from '../../lib/drive/operations'
 
+type SyncState = 'idle' | 'syncing' | 'done' | 'error'
+
 export default function SettingsScreen() {
   const navigate = useNavigate()
   const { displayName, setSignedOut } = useAuthStore()
-  const [syncing, setSyncing] = useState(false)
+  const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncResult, setSyncResult] = useState<string | null>(null)
 
   async function handleSync() {
-    setSyncing(true)
+    setSyncState('syncing')
     setSyncResult(null)
     try {
       await silentSignIn()
       const { pulled, pushed } = await fullSync()
       const parts: string[] = []
-      if (pulled.entries > 0) parts.push(`pulled ${pulled.entries} ${pulled.entries === 1 ? 'entry' : 'entries'}`)
-      if (pulled.moments > 0) parts.push(`pulled ${pulled.moments} ${pulled.moments === 1 ? 'moment' : 'moments'}`)
-      if (pushed.entries > 0) parts.push(`pushed ${pushed.entries} ${pushed.entries === 1 ? 'entry' : 'entries'}`)
-      if (pushed.moments > 0) parts.push(`pushed ${pushed.moments} ${pushed.moments === 1 ? 'moment' : 'moments'}`)
-      setSyncResult(parts.length > 0 ? parts.join(', ') : 'Already up to date')
-    } catch {
-      setSyncResult('Sync failed — check your connection')
-    } finally {
-      setSyncing(false)
+      if (pulled.entries > 0)  parts.push(`↓ ${pulled.entries} ${pulled.entries === 1 ? 'entry' : 'entries'}`)
+      if (pulled.moments > 0)  parts.push(`↓ ${pulled.moments} ${pulled.moments === 1 ? 'moment' : 'moments'}`)
+      if (pushed.entries > 0)  parts.push(`↑ ${pushed.entries} ${pushed.entries === 1 ? 'entry' : 'entries'}`)
+      if (pushed.moments > 0)  parts.push(`↑ ${pushed.moments} ${pushed.moments === 1 ? 'moment' : 'moments'}`)
+      setSyncResult(parts.length > 0 ? parts.join('  ') : 'Already up to date')
+      setSyncState('done')
+      setTimeout(() => setSyncState('idle'), 3000)
+    } catch (e) {
+      setSyncResult(e instanceof Error ? e.message : 'Sync failed — check your connection')
+      setSyncState('error')
+      setTimeout(() => setSyncState('idle'), 4000)
     }
   }
 
@@ -34,9 +38,17 @@ export default function SettingsScreen() {
     navigate('/onboarding', { replace: true })
   }
 
+  const syncLabel = syncState === 'syncing' ? 'Syncing…'
+    : syncState === 'done'    ? '✓ Synced'
+    : syncState === 'error'   ? 'Failed'
+    : 'Sync with Drive'
+
+  const syncColor = syncState === 'done'  ? '#22C55E'
+    : syncState === 'error' ? '#EF4444'
+    : '#7C4DFF'
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
-      {/* Header */}
       <div className="px-4 pt-14 pb-6">
         <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Settings</h1>
       </div>
@@ -64,15 +76,39 @@ export default function SettingsScreen() {
           <p className="text-[13px] text-[#666666] dark:text-[#888888] leading-relaxed">
             Push your data to Google Drive and pull any changes from other devices.
           </p>
+
           <button
             onClick={handleSync}
-            disabled={syncing}
-            className="w-full py-3 rounded-[12px] bg-[#7C4DFF] text-white font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+            disabled={syncState === 'syncing'}
+            className="w-full py-3 rounded-[12px] text-white font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-all duration-300"
+            style={{ backgroundColor: syncColor }}
           >
-            {syncing ? 'Syncing…' : 'Sync with Drive'}
+            <span
+              className="inline-block transition-all duration-300"
+              style={{
+                transform: syncState === 'syncing' ? 'scale(0.95)' : 'scale(1)',
+                opacity: syncState === 'syncing' ? 0.8 : 1,
+              }}
+            >
+              {syncState === 'syncing' ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span
+                    className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
+                    style={{ animation: 'spin 0.8s linear infinite' }}
+                  />
+                  Syncing…
+                </span>
+              ) : syncLabel}
+            </span>
           </button>
+
           {syncResult && (
-            <p className="text-[13px] text-center text-[#666666] dark:text-[#888888]">{syncResult}</p>
+            <p
+              className="text-[13px] text-center transition-all duration-300"
+              style={{ color: syncState === 'error' ? '#EF4444' : '#666666' }}
+            >
+              {syncResult}
+            </p>
           )}
         </div>
 
@@ -103,6 +139,10 @@ export default function SettingsScreen() {
           Your data lives in your Google Drive. Mosaic never stores it elsewhere.
         </p>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   )
 }

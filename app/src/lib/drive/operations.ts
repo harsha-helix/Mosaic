@@ -341,19 +341,15 @@ export async function pushAllToDrive(): Promise<{ entries: number; moments: numb
 
   let entries = 0
   for (const entry of allEntries) {
-    try {
-      await pushEntry(entry)
-      entries++
-    } catch { /* skip failures */ }
+    await pushEntry(entry)
+    entries++
   }
 
   let moments = 0
   for (const { date, moments: ms } of allMomentRecords) {
     if (ms.length === 0) continue
-    try {
-      await pushMoments(date, ms)
-      moments += ms.length
-    } catch { /* skip failures */ }
+    await pushMoments(date, ms)
+    moments += ms.length
   }
 
   return { entries, moments }

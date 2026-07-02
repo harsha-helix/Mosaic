@@ -91,12 +91,39 @@ export async function readFileBytes(fileId: string): Promise<Blob> {
   return res.blob()
 }
 
-export async function listFolder(folderId: string): Promise<Array<{ id: string; name: string }>> {
+export interface DriveFileMeta {
+  id: string
+  name: string
+  createdTime?: string
+  modifiedTime?: string
+}
+
+export async function listFolder(folderId: string): Promise<DriveFileMeta[]> {
   const query = encodeURIComponent("'" + folderId + "' in parents and trashed = false")
-  const fields = encodeURIComponent('files(id,name)')
-  const res = await driveRequest('GET', DRIVE_API + '/files?q=' + query + '&fields=' + fields + '&pageSize=1000')
-  const data = (await res.json()) as { files: Array<{ id: string; name: string }> }
-  return data.files
+  const fields = encodeURIComponent('nextPageToken,files(id,name,createdTime,modifiedTime)')
+  const files: DriveFileMeta[] = []
+  let pageToken: string | undefined
+  // Page through the full listing — a single un-looped pageSize=1000 request
+  // silently drops files once a folder crosses 1000 items (08 Known Issues).
+  do {
+    const url = DRIVE_API + '/files?q=' + query + '&fields=' + fields + '&pageSize=1000'
+      + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '')
+    const res = await driveRequest('GET', url)
+    const data = (await res.json()) as { files: DriveFileMeta[]; nextPageToken?: string }
+    files.push(...data.files)
+    pageToken = data.nextPageToken
+  } while (pageToken)
+  return files
+}
+
+/** Move a file to Drive's trash (recoverable for ~30 days, not a hard delete). */
+export async function trashFile(fileId: string): Promise<void> {
+  await driveRequest(
+    'PATCH',
+    DRIVE_API + '/files/' + fileId,
+    new Blob([JSON.stringify({ trashed: true })], { type: 'application/json' }),
+    { 'Content-Type': 'application/json' }
+  )
 }
 
 export async function writeFile(
@@ -137,12 +164,13 @@ export async function uploadMedia(name: string, blob: Blob, folderId: string): P
   return data.id
 }
 
-export async function createFolder(name: string, parentId?: string): Promise<string> {
+export async function createFolder(name: string, parentId?: string, appProperties?: Record<string, string>): Promise<string> {
   const metadata: Record<string, unknown> = {
     name,
     mimeType: 'application/vnd.google-apps.folder',
   }
   if (parentId) metadata.parents = [parentId]
+  if (appProperties) metadata.appProperties = appProperties
   const res = await driveRequest(
     'POST',
     DRIVE_API + '/files',
@@ -159,15 +187,27 @@ export async function createFolder(name: string, parentId?: string): Promise<str
  * We must list all app-accessible files and filter client-side instead.
  */
 export async function searchFolder(name: string): Promise<Array<{ id: string; name: string }>> {
-  const fields = encodeURIComponent('files(id,name,mimeType)')
-  const res = await driveRequest(
-    'GET',
-    DRIVE_API + '/files?fields=' + fields + '&pageSize=1000&orderBy=createdTime'
-  )
-  const data = (await res.json()) as { files: Array<{ id: string; name: string; mimeType: string }> }
-  return data.files.filter(
-    f => f.name === name && f.mimeType === 'application/vnd.google-apps.folder'
-  )
+  const fields = encodeURIComponent('nextPageToken,files(id,name,mimeType)')
+  const matches: Array<{ id: string; name: string }> = []
+  let pageToken: string | undefined
+  // Paged: without the loop this stops seeing the root folder once the app
+  // has created >1000 files total — bootstrap would then create a SECOND
+  // Mosaic/ folder (the folder-level version of the meta.json dupe bug).
+  do {
+    const url = DRIVE_API + '/files?fields=' + fields + '&pageSize=1000&orderBy=createdTime'
+      + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '')
+    const res = await driveRequest('GET', url)
+    const data = (await res.json()) as {
+      files: Array<{ id: string; name: string; mimeType: string }>
+      nextPageToken?: string
+    }
+    matches.push(...data.files.filter(
+      f => f.name === name && f.mimeType === 'application/vnd.google-apps.folder'
+    ))
+    pageToken = data.nextPageToken
+  } while (pageToken)
+  // orderBy=createdTime → matches[0] is the oldest (original) folder
+  return matches
 }
 
 const SILENT_SIGNIN_TIMEOUT_MS = 8000

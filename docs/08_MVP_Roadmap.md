@@ -123,34 +123,64 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 
 ---
 
-## Phase 3 — Insights
-**Goal:** Your data tells you something.
+## Phase 3 — Sync Integrity & Mobile Performance  ← next
+**Goal:** Trust the data; the phone stops being the weak device. Decision record: [`11_Sync_Integrity_and_Mobile_Performance.md`](./11_Sync_Integrity_and_Mobile_Performance.md).
 
-- [ ] **Insights screen**
-  - Summary card (streak, days this month, monthly averages)
-  - Time window selector (7d / 30d / 90d)
-  - Spark, Sleep, Mood + Energy, Anxiety line charts (Recharts)
-  - Moments per day bar chart
-  - Empty state (< 3 days)
-- [ ] Coffee + nicotine counts derived from moments, shown in Day View
-- [ ] Streak computation (consecutive days with evening commit)
+> Re-prioritized 2026-07-02 after direct inspection of the live Drive folder found **8 duplicate `meta.json` files** — root cause traced to `bootstrapDrive` checking only the local file index (never Drive) and `buildFileIndex` never indexing root files.
 
-**Done when:** After a few weeks of use, the Insights screen shows something meaningful about your patterns.
+- [x] `repairMeta()` owns the canonical `meta.json` index entry; root files resolved from the Drive listing (D1) — 2026-07-02
+- [x] `bootstrapDrive()` decides meta existence from the Drive listing; in-flight mutex prevents racing bootstraps (D2) — 2026-07-02
+- [x] `repairMeta()` — merges duplicates into canonical (oldest `createdTime`, settings from newest), trashes rest, self-heals on every app open via `hydrateToday` (D3) — 2026-07-02
+- [x] Media: downscale at capture (1600px JPEG q0.8 via `lib/media.ts`), 256px thumbnail in IndexedDB (`mediaThumb` store, DB v2), presence-check before upload/replay; `PhotoThumbnail` renders local-first with Drive fallback + backfill (D4) — 2026-07-02
+- [x] Auth: silent-refresh on `visibilitychange` + queue flush; sign-out no longer clears the file index or data (D5) — 2026-07-02
+- [x] `pageToken` loops in `listFolder`/`searchFolder`; `appProperties: {mosaic:'root'}` marker on new root folders (D6, partial) — 2026-07-02
+- [ ] Perf remainder (D6): date-range queries on Home (no unbounded `getAll*` on render paths), chunked full-history sync
+- [x] Onboarding notification times persisted; Settings has name + reminder-time editing (D7) — done in ui-overhaul pass
+
+**Done when:** fresh device sign-in creates zero root files; one `meta.json` exists; phone-captured photos appear on laptop; Home is jank-free on the phone.
 
 ---
 
-## Phase 4 — Notifications
-**Goal:** Mosaic reminds you. You don't have to remember to open it.
+## Phase 4 — Feel & Identity
+**Goal:** Close the "feels like a form" gap. Source: [`10_UIUX_Audit.md`](./10_UIUX_Audit.md) priorities + capture redesign in [`12_Capture_UX_Grouped_Grid.md`](./12_Capture_UX_Grouped_Grid.md).
 
-- [ ] Firebase project created (Spark plan, free)
-- [ ] Firebase FCM integrated into the PWA (service worker push handler)
-- [ ] FCM token generated on first load, saved to `meta.json`
-- [ ] `functions/src/notify.ts` Cloud Function written and deployed
-- [ ] 2 Cloud Scheduler jobs created: `0 8 * * *` (morning) and `0 21 * * *` (evening)
-- [ ] Notification tap → deep links to `/morning` or `/evening`
-- [ ] Notification times from Settings respected by Cloud Function (reads from `meta.json`)
+- [ ] Consolidate the four MomentCard implementations (audit #2 — do first, so photos are added once)
+- [ ] Photo playback: thumbnail component (reads IndexedDB thumbs from Phase 3) in Highlights, Search, Day View, Home (audit #1)
+- [ ] **Day Glyph** — radar shape on Morning save → status strip → Day View header (audit #3)
+- [ ] Capture picker → grouped grid + 2-tap quick-log for body types (doc 12)
+- [ ] Motion layer: bottom-sheet slide-up first, then route transitions (audit #4)
+- [ ] Today mosaic tile strip on Home + tile-drop animation (audit #5)
+- [ ] Polish: Evening "back" → "←", onboarding success beat, RememberToggle decision (audit #7)
 
-**Done when:** Phone receives a morning notification at 8am and evening at 9pm without the app being open.
+**Done when:** the app has a mosaic in it, photos come back, and capture feels faster than before.
+
+---
+
+## Phase 5 — Insights (lean) + Report Viewer
+**Goal:** Numbers in-app, meaning from Claude. Decision record: [`13_AI_Layer_Claude_Native.md`](./13_AI_Layer_Claude_Native.md).
+
+- [ ] **Insights screen (lean)** — streak, days this month, 7d/30d/90d selector, Spark/Sleep/Mood+Energy/Anxiety charts (Recharts), moments-per-day, empty state
+- [ ] Coffee + nicotine counts in Day View
+- [ ] `analysis/` added to file index + periodic sync
+- [ ] **Reports section** — report cards → rendered markdown, tappable highlight moments deep-linking to Day View
+
+**Done when:** daily glanceable numbers live in-app and Monday's Claude report renders in the app.
+
+---
+
+## Phase 6 — AI Reports Operational
+**Goal:** The data starts talking back. No app code — Cowork scheduled tasks per doc 13.
+
+- [ ] Weekly task (`0 8 * * 1`): read last 7 days from Drive → write `analysis/weekly/YYYY-Www.json`
+- [ ] Monthly task (`0 8 1 * *`): calendar month → `analysis/monthly/YYYY-MM.json`
+- [ ] First weekly report validated: all `highlights.moment_id` resolve, renders in-app
+
+**Done when:** a weekly report arrives unprompted, and answering one of its questions becomes a captured moment.
+
+---
+
+## Parked — Notifications (was Phase 4)
+**Status: undecided (2026-07-02).** Usage is already near-daily without reminders. Revisit after Phase 4 lands: compare Firebase FCM (original plan below) vs. a zero-infra substitute (Android alarms/calendar). Original FCM checklist preserved in [`06_Technical_Architecture.md`](./06_Technical_Architecture.md) — note its dependency on D7 (meta notification times) is resolved in Phase 3.
 
 ---
 
@@ -184,12 +214,16 @@ Phase 2 — Browse & Reflect  ✅ complete
     ↓
 Phase 2.5 — Sync Hardening  ✅ complete
     ↓
-Phase 3 — Insights          ← next  (data pays off)
+Phase 3 — Sync Integrity & Mobile Perf   ← next  (trust first)
     ↓
-Phase 4 — Notifications     (fully automatic)
-```
+Phase 4 — Feel & Identity                (glyph, photos, mosaic, motion)
+    ↓
+Phase 5 — Insights (lean) + Report Viewer
+    ↓
+Phase 6 — AI Reports (Cowork scheduled tasks, no app code)
 
-Start Phase 4 last — Firebase is the least familiar piece. By then the app is already working and the notifications are an enhancement, not a dependency.
+Parked: Notifications (undecided — usage is already habitual)
+```
 
 ---
 
@@ -200,4 +234,5 @@ Found during Phase 2.5 sync hardening. Not blocking, but worth fixing before the
 | Issue | Where | Why it matters |
 |---|---|---|
 | Onboarding lets you set custom morning/evening notification times, but `bootstrapDrive()` hardcodes `08:00`/`21:00` into `meta.json` on first write instead of using what you entered. Your chosen times are silently dropped. | `lib/drive/operations.ts` (`bootstrapDrive`), `screens/Onboarding/index.tsx` | Will surface as a real bug once Phase 4 notifications read `meta.json` for schedule times — the Cloud Function would fire at the wrong hour. Fix before starting Phase 4. |
+| **8 duplicate `meta.json` files exist on Drive right now** (observed 2026-07-02). Each bootstrap on a device with an empty local file index creates a new one, because existence is checked against IndexedDB only and `buildFileIndex` never indexes root files. Devices then track different copies → divergent `last_synced_at` → inconsistent periodic sync. | `lib/drive/operations.ts` (`bootstrapDrive` step 3), `lib/drive/fileIndex.ts` (`buildFileIndex`) | This is the prime suspect behind "data seemed to vanish" reports. Fix + one-time repair specced in `11_Sync_Integrity_and_Mobile_Performance.md` (D1–D3) — Phase 3's first item. |
 | `listFolder()` / `searchFolder()` request `pageSize=1000` with no page-token loop — Drive API results beyond 1000 files in a single folder are silently dropped. | `lib/drive/client.ts` | At one `entries/` file and up to a handful of `moments/` files per day, this is years away. But it means sync (and the "search Drive for existing Mosaic folder" bootstrap logic) will quietly stop seeing older files once any folder crosses 1000 items, with no error to signal it. Cheap to fix later with a `pageToken` loop — flagging now so it doesn't get forgotten. |

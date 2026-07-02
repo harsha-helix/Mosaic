@@ -10,11 +10,14 @@ import {
   createFolder,
   listFolder,
   searchFolder,
+  trashFile,
   getToken,
 } from './client'
+import type { DriveFileMeta } from './client'
 import {
   getFileId,
   setFileId,
+  getMediaFileId,
   getEntry,
   saveEntry,
   getMoments,
@@ -41,13 +44,87 @@ import type { DailyEntry, Moment, Meta } from '../../types'
 const ROOT_NAME = 'Mosaic'
 
 /**
- * Find or create the Mosaic/ folder hierarchy in Drive and populate
- * the file index from IndexedDB + the Drive listing.
- * Safe to call on a new device — searches Drive for existing data first.
+ * Resolve duplicate meta.json files into one canonical copy (11 — D3).
+ *
+ * Duplicates exist because bootstrap used to decide "does meta.json exist?"
+ * from the local IndexedDB index instead of the Drive listing — every device
+ * with a cleared index created another copy. This repairs the damage and is
+ * the single owner of the meta.json file-index entry.
+ *
+ * Canonical = oldest createdTime (preserves the true "when did I start
+ * Mosaic" date). Settings (display_name / notifications) are merged in from
+ * the most recently modified copy so the user's latest edits win. Extra
+ * copies go to Drive trash (recoverable), never hard-deleted.
+ *
+ * Returns the canonical file ID, or null if no meta.json exists on Drive.
  */
-export async function bootstrapDrive(
+export async function repairMeta(rootChildren: DriveFileMeta[]): Promise<string | null> {
+  const metas = rootChildren
+    .filter(f => f.name === 'meta.json')
+    .sort((a, b) => (a.createdTime ?? '').localeCompare(b.createdTime ?? ''))
+
+  if (metas.length === 0) return null
+
+  const canonical = metas[0]
+  await setFileId('meta.json', canonical.id)
+  if (metas.length === 1) return canonical.id
+
+  // Merge settings from the most recently modified copy into the canonical one
+  try {
+    const newest = [...metas].sort((a, b) =>
+      (b.modifiedTime ?? '').localeCompare(a.modifiedTime ?? '')
+    )[0]
+    const [canonicalMeta, newestMeta] = await Promise.all([
+      readFile<Meta>(canonical.id),
+      newest.id === canonical.id ? Promise.resolve(null) : readFile<Meta>(newest.id),
+    ])
+    const merged: Meta = {
+      ...canonicalMeta,
+      ...(newestMeta ? {
+        display_name: newestMeta.display_name,
+        notifications: newestMeta.notifications,
+        ...(newestMeta.fcm_token ? { fcm_token: newestMeta.fcm_token } : {}),
+      } : {}),
+      created_at: canonicalMeta.created_at, // never reset by a later bootstrap
+      last_synced_at: new Date().toISOString(),
+    }
+    await writeFile('meta.json', merged, MOSAIC_FOLDER_ID ?? '', canonical.id)
+  } catch {
+    // Merge is best-effort — even if reading/merging fails, deduping below
+    // still fixes the split-brain (all devices converge on the canonical ID).
+  }
+
+  // Trash the duplicates — best-effort, retried implicitly on next repair pass
+  for (const dupe of metas.slice(1)) {
+    try { await trashFile(dupe.id) } catch { /* next open retries */ }
+  }
+  return canonical.id
+}
+
+// In-flight guard: concurrent callers (app open + first push racing) must not
+// run two bootstraps — that's exactly the race that duplicates files.
+let _bootstrapInFlight: Promise<void> | null = null
+
+/**
+ * Find or create the Mosaic/ folder hierarchy in Drive and populate
+ * the file index. Safe to call on a new device — searches Drive for
+ * existing data first, and never creates a file that already exists on
+ * Drive (existence is decided from the Drive listing, NOT the local
+ * index — see docs/11 D2).
+ */
+export function bootstrapDrive(
   displayName: string,
   notifications: { morning_time: string; evening_time: string } = { morning_time: '08:00', evening_time: '21:00' }
+): Promise<void> {
+  if (_bootstrapInFlight) return _bootstrapInFlight
+  _bootstrapInFlight = doBootstrap(displayName, notifications)
+    .finally(() => { _bootstrapInFlight = null })
+  return _bootstrapInFlight
+}
+
+async function doBootstrap(
+  displayName: string,
+  notifications: { morning_time: string; evening_time: string }
 ): Promise<void> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
@@ -67,9 +144,9 @@ export async function bootstrapDrive(
   if (!mosaicId) {
     const existing = await searchFolder(ROOT_NAME)
     if (existing.length > 0) {
-      mosaicId = existing[0].id
+      mosaicId = existing[0].id // oldest first — the original folder
     } else {
-      mosaicId = await createFolder(ROOT_NAME)
+      mosaicId = await createFolder(ROOT_NAME, undefined, { mosaic: 'root' })
     }
     await setFileId('__mosaic_root__', mosaicId)
   }
@@ -94,9 +171,10 @@ export async function bootstrapDrive(
   await setFileId('__moments_folder__', momentsId)
   await setFileId('__media_folder__', mediaId)
 
-  // 3. Find or create meta.json
-  const existingMeta = await getFileId('meta.json')
-  if (!existingMeta) {
+  // 3. Meta: decide existence from the Drive listing (step 2's `children`),
+  //    never from the local index. Repair any duplicates while we're here.
+  const canonicalMetaId = await repairMeta(children)
+  if (!canonicalMetaId) {
     const meta: Meta = {
       version: '1',
       display_name: displayName,
@@ -158,6 +236,12 @@ export async function pushMoments(date: string, moments: Moment[]): Promise<void
 
 export async function pushMedia(momentId: string, blob: Blob, ext: string): Promise<string> {
   if (!MEDIA_FOLDER_ID) throw new Error('Drive not bootstrapped')
+  // Presence check (docs/11 D4): a queued retry may replay after an earlier
+  // attempt actually succeeded (e.g. upload completed but the response was
+  // lost to a dropped connection). Media is immutable once written, so if
+  // the file is already indexed, don't create a duplicate.
+  const existing = await getMediaFileId(momentId)
+  if (existing) return existing
   const name = momentId + '.' + ext
   const id = await uploadMediaFile(name, blob, MEDIA_FOLDER_ID)
   await setFileId('media/' + name, id)
@@ -293,6 +377,16 @@ export async function hydrateToday(date: string): Promise<{
 
   // Refresh file index so cross-device files are discoverable
   await buildFileIndex()
+
+  // Self-heal meta.json duplicates on every open (docs/11 D3) — one cheap
+  // root listing; keeps the canonical meta ID indexed so this device reads
+  // and writes the same file every other device does.
+  if (MOSAIC_FOLDER_ID) {
+    try {
+      const rootChildren = await listFolder(MOSAIC_FOLDER_ID)
+      await repairMeta(rootChildren)
+    } catch { /* offline or transient — next open retries */ }
+  }
 
   // Fetch today from Drive (returns null/[] if file doesn't exist yet)
   const [remoteEntry, remoteMoments] = await Promise.all([

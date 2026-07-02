@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { clearFileIndex } from '../lib/db/queries'
 import { resetFolderIds } from '../lib/drive/fileIndex'
 
 const STORAGE_KEY = 'mosaic_auth'
@@ -27,8 +26,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   setSignedOut: () => {
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
-    // Clear IDB file index and in-memory folder IDs so the next onboarding starts fresh
-    clearFileIndex().catch(console.warn)
+    // Reset only the in-memory folder IDs. The IndexedDB file index and data
+    // stores are deliberately KEPT (docs/11 D5): clearing the index on
+    // sign-out was what forced full re-bootstraps, and a bootstrap running
+    // with an empty index is exactly the path that created 8 duplicate
+    // meta.json files on Drive. Sign-out revokes access, not local knowledge.
     resetFolderIds()
     set({ isSignedIn: false, displayName: '' })
   },

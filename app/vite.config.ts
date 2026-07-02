@@ -12,8 +12,12 @@ export default defineConfig({
         name: 'Mosaic',
         short_name: 'Mosaic',
         description: 'Version control for a life well lived.',
-        theme_color: '#7C4DFF',
-        background_color: '#FAFAF8',
+        // Cream base — matches bg-base in tailwind.config.ts. These are
+        // static (manifest.json can't react to the in-app theme toggle),
+        // so they're set to the light default; the live status bar color
+        // is handled separately via the <meta name="theme-color"> tag.
+        theme_color: '#FAF3E7',
+        background_color: '#FAF3E7',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

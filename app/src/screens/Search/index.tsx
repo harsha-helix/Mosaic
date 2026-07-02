@@ -65,9 +65,9 @@ export default function SearchScreen() {
           onClick={() => setTypeFilter(null)}
           className="flex-shrink-0 px-4 py-1.5 rounded-pill text-[13px] font-medium border-2 transition-colors"
           style={{
-            borderColor: !typeFilter ? '#C1633D' : '#E5D9C6',
-            backgroundColor: !typeFilter ? '#C1633D15' : 'transparent',
-            color: !typeFilter ? '#C1633D' : '#6B5F52',
+            borderColor: !typeFilter ? 'var(--color-terracotta)' : 'var(--color-hairline)',
+            backgroundColor: !typeFilter ? 'color-mix(in srgb, var(--color-terracotta) 8%, transparent)' : 'transparent',
+            color: !typeFilter ? 'var(--color-terracotta)' : 'var(--color-muted)',
           }}
         >All</button>
         {ALL_TYPES.map(type => {
@@ -79,9 +79,9 @@ export default function SearchScreen() {
               onClick={() => setTypeFilter(active ? null : type)}
               className="flex-shrink-0 px-4 py-1.5 rounded-pill text-[13px] font-medium border-2 transition-colors capitalize"
               style={{
-                borderColor: active ? color : '#E5D9C6',
-                backgroundColor: active ? color + '22' : 'transparent',
-                color: active ? color : '#6B5F52',
+                borderColor: active ? color : 'var(--color-hairline)',
+                backgroundColor: active ? `color-mix(in srgb, ${color} 13%, transparent)` : 'transparent',
+                color: active ? color : 'var(--color-muted)',
               }}
             >{type}</button>
           )
@@ -95,14 +95,14 @@ export default function SearchScreen() {
 
       {results.length === 0 && !showRecent && (
         <div className="flex flex-col items-center py-20 text-center">
-          <SearchIcon size={30} color="#9A8E7E" className="mb-3" />
+          <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
           <p className="text-[15px] text-muted dark:text-muted-dark">Nothing found — try different words</p>
         </div>
       )}
 
       {results.length === 0 && showRecent && (
         <div className="flex flex-col items-center py-20 text-center">
-          <SearchIcon size={30} color="#9A8E7E" className="mb-3" />
+          <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
           <p className="text-[15px] text-muted dark:text-muted-dark">Capture a moment to search it later</p>
         </div>
       )}

@@ -21,8 +21,8 @@ function CommitCard({ entry, onClick }: { entry: DailyEntry; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-card p-4 bg-surface dark:bg-surface-dark flex gap-3"
-      style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)', borderLeft: '3px solid #C1633D' }}
+      className="w-full text-left rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark flex gap-3"
+      style={{ borderLeft: '3px solid var(--color-terracotta)' }}
     >
       {m && (m.mood !== undefined || m.energy !== undefined || m.anxiety !== undefined || m.excitement !== undefined) && (
         <DayGlyph mood={m.mood} energy={m.energy} anxiety={m.anxiety} excitement={m.excitement} size={40} className="flex-shrink-0 mt-0.5" />
@@ -30,7 +30,7 @@ function CommitCard({ entry, onClick }: { entry: DailyEntry; onClick: () => void
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-[13px] font-medium text-terracotta">✦ Day committed</span>
-          {ev.remember && <span className="text-[14px]" style={{ color: '#C9A24B' }}>★</span>}
+          {ev.remember && <span className="text-[14px] text-warmth">★</span>}
         </div>
         {ev.day_title && (
           <p className="font-display text-[16px] font-semibold text-ink dark:text-ink-dark leading-snug mb-1">

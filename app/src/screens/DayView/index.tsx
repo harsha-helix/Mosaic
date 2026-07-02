@@ -13,7 +13,7 @@ function MetricChip({ label, value, color, suffix = '' }: { label: string; value
   return (
     <span
       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-[12px] font-medium"
-      style={{ backgroundColor: color + '1A', color }}
+      style={{ backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`, color }}
     >
       {label} {value}{suffix}
     </span>
@@ -129,10 +129,10 @@ export default function DayViewScreen() {
               <MetricChip label="Spark" value={entry.evening.spark}            color={METRIC_COLORS.spark} />
               <MetricChip label="Mood"  value={entry.evening.mood}             color={METRIC_COLORS.mood} />
               {entry.evening.exercise?.done && (
-                <MetricChip label="Exercise" value={entry.evening.exercise.minutes} color="#7A8B5C" suffix="m" />
+                <MetricChip label="Exercise" value={entry.evening.exercise.minutes} color="var(--color-sage)" suffix="m" />
               )}
-              <MetricChip label="Reading"   value={entry.evening.reading_minutes}  color="#5B7B7A" suffix="m" />
-              <MetricChip label="Deep work" value={entry.evening.deep_work_hours}  color="#C1633D" suffix="h" />
+              <MetricChip label="Reading"   value={entry.evening.reading_minutes}  color="var(--color-reflective)" suffix="m" />
+              <MetricChip label="Deep work" value={entry.evening.deep_work_hours}  color="var(--color-terracotta)" suffix="h" />
             </div>
             <div className="space-y-3">
               <ReflectionRow label="Biggest win"       value={entry.evening.biggest_win} />

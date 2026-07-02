@@ -28,18 +28,29 @@ interface MosaicDB extends DBSchema {
     key: string
     value: SyncQueueItem
   }
+  // v2: 256px thumbnails generated at capture (docs/11 D4) so list surfaces
+  // render photos instantly and offline, without a Drive fetch per image.
+  mediaThumb: {
+    key: string
+    value: { mediaId: string; blob: Blob }
+  }
 }
 
 let dbInstance: IDBPDatabase<MosaicDB> | null = null
 
 export async function getDb(): Promise<IDBPDatabase<MosaicDB>> {
   if (dbInstance) return dbInstance
-  dbInstance = await openDB<MosaicDB>('mosaic', 1, {
-    upgrade(db) {
-      db.createObjectStore('entry', { keyPath: 'date' })
-      db.createObjectStore('moment', { keyPath: 'date' })
-      db.createObjectStore('fileIndex', { keyPath: 'path' })
-      db.createObjectStore('syncQueue', { keyPath: 'id' })
+  dbInstance = await openDB<MosaicDB>('mosaic', 2, {
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        db.createObjectStore('entry', { keyPath: 'date' })
+        db.createObjectStore('moment', { keyPath: 'date' })
+        db.createObjectStore('fileIndex', { keyPath: 'path' })
+        db.createObjectStore('syncQueue', { keyPath: 'id' })
+      }
+      if (oldVersion < 2) {
+        db.createObjectStore('mediaThumb', { keyPath: 'mediaId' })
+      }
     },
   })
   return dbInstance

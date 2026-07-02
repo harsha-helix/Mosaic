@@ -21,7 +21,7 @@ function formatDate(iso: string) {
 }
 
 export function MomentCard({ moment, variant = 'default', highlightHtml, dateFormat = 'datetime', onClick }: MomentCardProps) {
-  const color = MOMENT_COLORS[moment.type] ?? '#9A8E7E'
+  const color = MOMENT_COLORS[moment.type] ?? 'var(--color-hint)'
   const label = moment.type.charAt(0).toUpperCase() + moment.type.slice(1)
   const compact = variant === 'compact'
 
@@ -37,13 +37,10 @@ export function MomentCard({ moment, variant = 'default', highlightHtml, dateFor
       onClick={onClick}
       className={
         (onClick ? 'w-full text-left ' : '') +
-        'bg-surface dark:bg-surface-dark ' +
+        'bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark ' +
         (compact ? 'rounded-btn-sm p-3' : 'rounded-card p-4')
       }
-      style={{
-        borderLeft: '3px solid ' + color,
-        boxShadow: '0 2px 12px rgba(43,36,32,0.08)',
-      }}
+      style={{ borderLeft: '3px solid ' + color }}
     >
       <div className={'flex items-center justify-between ' + (compact ? 'mb-0.5' : 'mb-2')}>
         <div className="flex items-center gap-2 min-w-0">
@@ -53,7 +50,7 @@ export function MomentCard({ moment, variant = 'default', highlightHtml, dateFor
             {dateFormat === 'date' ? '· ' : ''}{dateLabel}
           </span>
         </div>
-        {moment.remember && <span className="text-[#C9A24B] flex-shrink-0" style={{ fontSize: compact ? 14 : 16 }}>★</span>}
+        {moment.remember && <span className="text-warmth flex-shrink-0" style={{ fontSize: compact ? 14 : 16 }}>★</span>}
       </div>
 
       {highlightHtml ? (

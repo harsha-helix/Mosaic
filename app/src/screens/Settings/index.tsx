@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
+import { useThemeStore } from '../../store/theme'
+import { CLUSTER, DANGER, textOnAccent } from '../../lib/theme'
 import { silentSignIn, signIn, getToken } from '../../lib/drive/client'
 import { fullSync, flushSyncQueue, fetchMeta, pushMeta } from '../../lib/drive/operations'
 import { getPendingSyncItems } from '../../lib/db/queries'
+import { ThemeToggle } from '../../components/ThemeToggle/ThemeToggle'
 
 type SyncState = 'idle' | 'syncing' | 'done' | 'error'
 type ProfileState = 'idle' | 'saving' | 'done' | 'error'
@@ -11,6 +14,7 @@ type ProfileState = 'idle' | 'saving' | 'done' | 'error'
 export default function SettingsScreen() {
   const navigate = useNavigate()
   const { displayName, setSignedIn, setSignedOut } = useAuthStore()
+  const theme = useThemeStore(s => s.theme)
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncResult, setSyncResult] = useState<string | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
@@ -129,10 +133,17 @@ export default function SettingsScreen() {
     : syncState === 'error'   ? 'Failed'
     : 'Sync with Drive'
 
-  const syncColor = syncState === 'done'  ? '#7A8B5C'
-    : syncState === 'error' ? '#B33F3F'
-    : '#C1633D'
-  const syncTextColor = syncState === 'idle' || syncState === 'syncing' ? '#3D1F12' : '#FFFFFF'
+  // textOnAccent() rather than a manual white/dark ternary — dark mode's
+  // accent chips are brighter/lighter than light mode's, so a fixed
+  // "white text on done/error" rule (which read fine against light
+  // mode's darker sage/red) would lose contrast once those same tokens
+  // brighten for dark mode. textOnAccent always returns a dark shade,
+  // which keeps working since every state color is a light-ish chip in
+  // both themes.
+  const syncColor = syncState === 'done'  ? CLUSTER.body
+    : syncState === 'error' ? DANGER
+    : CLUSTER.creative
+  const syncTextColor = textOnAccent(syncColor)
 
   return (
     <div className="min-h-screen bg-base dark:bg-base-dark">
@@ -145,7 +156,7 @@ export default function SettingsScreen() {
         <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
           <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Account</p>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#C1633D20] flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--color-terracotta) 13%, transparent)' }}>
               <span className="font-display font-bold text-terracotta text-[17px]">
                 {displayName.charAt(0).toUpperCase()}
               </span>
@@ -154,6 +165,18 @@ export default function SettingsScreen() {
               <p className="text-[15px] font-medium text-ink dark:text-ink-dark">{displayName}</p>
               <p className="text-[12px] text-hint dark:text-hint-dark">Google Drive</p>
             </div>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Appearance</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[14px] font-medium text-ink dark:text-ink-dark">Dark theme</p>
+              <p className="text-[12px] text-hint dark:text-hint-dark">{theme === 'dark' ? 'On' : 'Off'}</p>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
 
@@ -198,14 +221,14 @@ export default function SettingsScreen() {
             disabled={profileState === 'saving'}
             className="w-full py-2.5 rounded-btn-sm font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-transform"
             style={{
-              backgroundColor: profileState === 'done' ? '#7A8B5C' : profileState === 'error' ? '#B33F3F' : '#C1633D',
-              color: profileState === 'idle' || profileState === 'saving' ? '#3D1F12' : '#FFFFFF',
+              backgroundColor: profileState === 'done' ? CLUSTER.body : profileState === 'error' ? DANGER : CLUSTER.creative,
+              color: textOnAccent(profileState === 'done' ? CLUSTER.body : profileState === 'error' ? DANGER : CLUSTER.creative),
             }}
           >
             {profileState === 'saving' ? 'Saving…' : profileState === 'done' ? '✓ Saved' : profileState === 'error' ? 'Failed' : 'Save'}
           </button>
           {profileMessage && profileState === 'error' && (
-            <p className="text-[12px] text-center" style={{ color: '#B33F3F' }}>{profileMessage}</p>
+            <p className="text-[12px] text-center" style={{ color: 'var(--color-danger)' }}>{profileMessage}</p>
           )}
           <p className="text-[11px] text-hint dark:text-hint-dark leading-relaxed">
             Reminder times are stored, but push notifications aren't built yet — this is groundwork for that.
@@ -247,14 +270,14 @@ export default function SettingsScreen() {
           {syncResult && (
             <p
               className="text-[13px] text-center transition-all duration-300"
-              style={{ color: syncState === 'error' ? '#B33F3F' : '#6B5F52' }}
+              style={{ color: syncState === 'error' ? 'var(--color-danger)' : 'var(--color-muted)' }}
             >
               {syncResult}
             </p>
           )}
 
           {pendingCount > 0 && (
-            <p className="text-[13px] text-center" style={{ color: '#C9A24B' }}>
+            <p className="text-[13px] text-center" style={{ color: 'var(--color-warmth)' }}>
               {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting to sync
             </p>
           )}
@@ -290,7 +313,7 @@ export default function SettingsScreen() {
         <button
           onClick={handleSignOut}
           className="w-full py-3 rounded-btn-sm border border-hairline dark:border-hairline-dark font-medium text-[14px] active:scale-[0.98] transition-transform"
-          style={{ color: '#B33F3F' }}
+          style={{ color: 'var(--color-danger)' }}
         >
           Sign out
         </button>

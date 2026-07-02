@@ -50,7 +50,7 @@ export function highlight(text: string, query: string): string {
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return text.replace(
     new RegExp('(' + escaped + ')', 'gi'),
-    '<mark style="background:#C1633D22;color:#C1633D;border-radius:3px;padding:0 2px">$1</mark>'
+    '<mark style="background:color-mix(in srgb, var(--color-terracotta) 13%, transparent);color:var(--color-terracotta);border-radius:3px;padding:0 2px">$1</mark>'
   )
 }
 

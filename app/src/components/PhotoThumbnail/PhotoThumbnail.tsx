@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { resolveMediaUrl } from '../../lib/drive/mediaCache'
+import { resolveThumbUrl } from '../../lib/drive/mediaCache'
 
 interface PhotoThumbnailProps {
   mediaId: string
@@ -15,7 +15,7 @@ export function PhotoThumbnail({ mediaId, className, alt = '' }: PhotoThumbnailP
     let cancelled = false
     setUrl(null)
     setFailed(false)
-    resolveMediaUrl(mediaId).then(u => {
+    resolveThumbUrl(mediaId).then(u => {
       if (cancelled) return
       if (u) setUrl(u)
       else setFailed(true)

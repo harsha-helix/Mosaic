@@ -85,7 +85,7 @@ export default function HomeScreen() {
       </div>
 
       {/* Quote card */}
-      <div className="rounded-card p-5 bg-surface dark:bg-surface-dark" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+      <div className="rounded-card p-5 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark">
         <p className="font-display text-[15px] italic text-muted dark:text-muted-dark leading-relaxed">
           "{quote}"
         </p>
@@ -95,14 +95,14 @@ export default function HomeScreen() {
       {hasAverages && (
         <div>
           <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Last 7 days</p>
-          <div className="rounded-card p-4 bg-surface dark:bg-surface-dark flex flex-wrap gap-x-5 gap-y-2" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+          <div className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark flex flex-wrap gap-x-5 gap-y-2">
             <AverageChip label="Spark"   value={averages!.spark}   color={METRIC_COLORS.spark} />
             <AverageChip label="Mood"    value={averages!.mood}    color={METRIC_COLORS.mood} />
             <AverageChip label="Energy"  value={averages!.energy}  color={METRIC_COLORS.energy} />
             <AverageChip label="Anxiety" value={averages!.anxiety} color={METRIC_COLORS.anxiety} />
             {averages!.sleep !== null && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-medium" style={{ color: '#5B7B7A' }}>Sleep</span>
+                <span className="text-[13px] font-medium" style={{ color: 'var(--color-reflective)' }}>Sleep</span>
                 <span className="text-[15px] font-bold text-ink dark:text-ink-dark">{averages!.sleep}h</span>
               </div>
             )}
@@ -113,10 +113,10 @@ export default function HomeScreen() {
       {/* Last beautiful thing */}
       {lastBeautiful && (
         <div
-          className="rounded-card p-4 bg-surface dark:bg-surface-dark relative overflow-hidden"
-          style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)', borderLeft: '3px solid #C9A24B' }}
+          className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark relative overflow-hidden"
+          style={{ borderLeft: '3px solid var(--color-warmth)' }}
         >
-          <p className="text-[12px] font-medium uppercase tracking-wide mb-1" style={{ color: '#C9A24B' }}>Last beautiful thing</p>
+          <p className="text-[12px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--color-warmth)' }}>Last beautiful thing</p>
           {lastBeautiful.media_id && (
             <PhotoThumbnail
               mediaId={lastBeautiful.media_id}
@@ -131,11 +131,11 @@ export default function HomeScreen() {
       {/* Today status strip */}
       <div>
         <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Today</p>
-        <div className="rounded-card p-4 bg-surface dark:bg-surface-dark flex items-center gap-3" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+        <div className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark flex items-center gap-3">
           {morningDone && morning ? (
             <DayGlyph mood={morning.mood} energy={morning.energy} anxiety={morning.anxiety} excitement={morning.excitement} size={22} />
           ) : (
-            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: '#E5D9C6' }} />
+            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--color-hairline)' }} />
           )}
           <span className="text-[14px] text-muted dark:text-muted-dark flex-shrink-0">Morning</span>
           <span className="text-hairline dark:text-hairline-dark flex-shrink-0">&middot;</span>
@@ -160,7 +160,7 @@ export default function HomeScreen() {
 
           <span className="text-hairline dark:text-hairline-dark flex-shrink-0">&middot;</span>
           <span className="text-[14px] text-muted dark:text-muted-dark flex-shrink-0">Evening</span>
-          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: eveningDone ? '#C1633D' : '#E5D9C6' }} />
+          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: eveningDone ? 'var(--color-terracotta)' : 'var(--color-hairline)' }} />
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export default function HomeScreen() {
         <button
           onClick={() => navigate('/morning')}
           className="w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
-          style={{ backgroundColor: '#C1633D' }}
+          style={{ backgroundColor: 'var(--color-terracotta)' }}
         >
           <span className="font-display font-semibold text-[15px]" style={{ color: '#3D1F12' }}>Start your morning</span>
           <div className="flex items-center gap-2">

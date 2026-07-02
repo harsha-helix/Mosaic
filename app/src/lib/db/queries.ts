@@ -70,6 +70,19 @@ export async function getMediaFileId(mediaId: string): Promise<string | undefine
   return key ? all[key] : undefined
 }
 
+// ── Media thumbnails ──────────────────────────────────────────────────────────
+
+export async function saveThumbnail(mediaId: string, blob: Blob): Promise<void> {
+  const db = await getDb()
+  await db.put('mediaThumb', { mediaId, blob })
+}
+
+export async function getThumbnail(mediaId: string): Promise<Blob | undefined> {
+  const db = await getDb()
+  const record = await db.get('mediaThumb', mediaId)
+  return record?.blob
+}
+
 // ── Sync Queue ────────────────────────────────────────────────────────────────
 
 export async function enqueueSyncItem(

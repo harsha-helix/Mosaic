@@ -54,7 +54,7 @@ export default function OnboardingScreen() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           className="w-20 h-20 rounded-full flex items-center justify-center mb-5"
-          style={{ backgroundColor: '#7A8B5C' }}
+          style={{ backgroundColor: 'var(--color-sage)' }}
         >
           <span className="text-4xl text-white">✓</span>
         </motion.div>
@@ -126,7 +126,7 @@ export default function OnboardingScreen() {
           {loading ? (status || 'Connecting…') : 'Connect Google Drive'}
         </button>
 
-        {error && <p className="text-center text-sm" style={{ color: '#B33F3F' }}>{error}</p>}
+        {error && <p className="text-center text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p>}
 
         <p className="text-center text-[13px] text-hint dark:text-hint-dark">
           Your data lives in your Drive. Only you can see it.

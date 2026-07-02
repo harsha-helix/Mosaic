@@ -14,7 +14,7 @@ export function RememberToggle({ value, onChange }: RememberToggleProps) {
     >
       <motion.span
         className="text-xl"
-        style={{ display: 'inline-block', color: value ? '#C9A24B' : '#9A8E7E' }}
+        style={{ display: 'inline-block', color: value ? 'var(--color-warmth)' : 'var(--color-hint)' }}
         animate={{
           scale: value ? 1.2 : 1,
           rotate: value ? [0, -18, 14, -8, 0] : 0,

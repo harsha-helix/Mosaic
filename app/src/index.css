@@ -3,6 +3,40 @@
 @tailwind utilities;
 
 @layer base {
+  /* Accent cluster colors as custom properties, not literal hex in
+     tailwind.config.ts — so every consumer (Tailwind classes, inline
+     style={{color}}, SVG fill/stroke, even plain-object color maps in
+     src/types/*.ts that run outside React) picks up the dark-mode
+     variant automatically through the cascade, with zero per-call-site
+     branching. Dark values are brighter/more saturated than light —
+     colors tuned for cream paper read muddy on a near-black background,
+     so dark mode needs the opposite adjustment from what's intuitive.
+     Neutral tokens (hairline/muted/hint) are included too since several
+     components read them via inline style rather than a `dark:` class. */
+  :root {
+    --color-terracotta: #C1633D;
+    --color-reflective: #5B7B7A;
+    --color-warmth: #C9A24B;
+    --color-sage: #7A8B5C;
+    --color-mauve: #8B6B7D;
+    --color-danger: #B33F3F;
+    --color-hairline: #E5D9C6;
+    --color-muted: #6B5F52;
+    --color-hint: #9A8E7E;
+  }
+
+  .dark {
+    --color-terracotta: #F3915C;
+    --color-reflective: #8FC0BC;
+    --color-warmth: #F4CB70;
+    --color-sage: #A8C17E;
+    --color-mauve: #C793AF;
+    --color-danger: #E2776A;
+    --color-hairline: #4A3B2A;
+    --color-muted: #D2BEA3;
+    --color-hint: #93816C;
+  }
+
   html {
     font-family: 'Karla', sans-serif;
     -webkit-tap-highlight-color: transparent;

@@ -25,7 +25,7 @@ export function MetricCircles({ value, onChange, color, label }: MetricCirclesPr
               className="w-7 h-7 rounded-full border-2 flex-shrink-0 transition-transform active:scale-90"
               style={{
                 backgroundColor: filled ? color : 'transparent',
-                borderColor: filled ? color : '#E5D9C6',
+                borderColor: filled ? color : 'var(--color-hairline)',
               }}
             />
           )

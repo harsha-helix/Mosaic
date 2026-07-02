@@ -48,13 +48,13 @@ export function DayGlyph({ mood, energy, anxiety, excitement, size = 56, classNa
       className={className}
       style={animate ? { animation: 'day-glyph-pop 200ms ease-out' } : undefined}
     >
-      <circle cx={cx} cy={cy} r={maxR} fill="none" stroke="#E5D9C6" strokeWidth="1" strokeDasharray="2 3" opacity={0.6} />
-      <polygon points={points} fill="#C1633D26" stroke="#C1633D" strokeWidth={Math.max(1, size * 0.02)} strokeLinejoin="round" />
+      <circle cx={cx} cy={cy} r={maxR} fill="none" stroke="var(--color-hairline)" strokeWidth="1" strokeDasharray="2 3" opacity={0.6} />
+      <polygon points={points} fill="color-mix(in srgb, var(--color-terracotta) 15%, transparent)" stroke="var(--color-terracotta)" strokeWidth={Math.max(1, size * 0.02)} strokeLinejoin="round" />
       {mood !== undefined && <circle cx={top.x} cy={top.y} r={dot} fill={AXIS_COLOR.mood} />}
       {energy !== undefined && <circle cx={right.x} cy={right.y} r={dot} fill={AXIS_COLOR.energy} />}
       {anxiety !== undefined && <circle cx={bottom.x} cy={bottom.y} r={dot} fill={AXIS_COLOR.anxiety} />}
       {excitement !== undefined && <circle cx={left.x} cy={left.y} r={dot} fill={AXIS_COLOR.excitement} />}
-      <circle cx={cx} cy={cy} r={dot * 0.7} fill="#C1633D" />
+      <circle cx={cx} cy={cy} r={dot * 0.7} fill="var(--color-terracotta)" />
       <style>{`
         @keyframes day-glyph-pop {
           0%   { transform: scale(0.3); opacity: 0; }

@@ -9,8 +9,8 @@ const NAV_ITEMS = [
   { path: '/settings',   label: 'Settings',   Icon: SettingsIcon },
 ]
 
-const ACTIVE = '#C1633D'
-const INACTIVE = '#9A8E7E'
+const ACTIVE = 'var(--color-terracotta)'
+const INACTIVE = 'var(--color-hint)'
 
 export function BottomNav() {
   const location = useLocation()

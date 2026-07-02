@@ -172,6 +172,25 @@ function AppShell() {
     return () => window.removeEventListener('online', handleOnline)
   }, [])
 
+  // Opportunistic token refresh (docs/11 D5): when the PWA returns to the
+  // foreground with no live token, try one silent sign-in and flush the
+  // queue. Mobile browsers block the silent iframe flow far less often right
+  // after the user has foregrounded the page, so this quietly recovers most
+  // "signed out on the phone" states without any prompt — and if it fails,
+  // nothing changes: reads stay local, writes keep queueing.
+  useEffect(() => {
+    function handleVisible() {
+      if (document.visibilityState !== 'visible') return
+      if (!useAuthStore.getState().isSignedIn) return
+      if (driveIsSignedIn()) return
+      silentSignIn()
+        .then(() => { if (driveIsSignedIn()) return flushSyncQueue() })
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', handleVisible)
+    return () => document.removeEventListener('visibilitychange', handleVisible)
+  }, [])
+
   // Hold one tick while localStorage hydrates to prevent onboarding flash
   if (!hydrated) return null
 

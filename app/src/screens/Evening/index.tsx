@@ -39,7 +39,7 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1E1812] flex flex-col items-center justify-center px-8">
+    <div className="fixed inset-0 z-50 bg-[#120E0A] flex flex-col items-center justify-center px-8">
       <div className="w-full max-w-sm space-y-2">
         {lines.map((line, i) => (
           <p key={i} className="font-mono text-[14px] text-green-400 leading-relaxed">{line}</p>
@@ -47,7 +47,10 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
       </div>
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {['#C1633D','#C9A24B','#7A8B5C','#5B7B7A','#8B6B7D'].flatMap((c, i) =>
+          {/* Ceremony backdrop is always dark regardless of app theme (it's
+              a deliberate "terminal" moment), so confetti always uses the
+              brighter dark-mode accent variants for visibility. */}
+          {['#F3915C','#F4CB70','#A8C17E','#8FC0BC','#C793AF'].flatMap((c, i) =>
             Array.from({ length: 8 }, (_, j) => (
               <div
                 key={i + '-' + j}
@@ -169,9 +172,9 @@ export default function EveningScreen() {
                 onClick={() => setExerciseDone(v)}
                 className="px-5 py-2 rounded-input text-[14px] font-medium border-2 transition-all"
                 style={{
-                  borderColor: exerciseDone === v ? '#C1633D' : '#E5D9C6',
-                  backgroundColor: exerciseDone === v ? '#C1633D15' : 'transparent',
-                  color: exerciseDone === v ? '#C1633D' : '#6B5F52',
+                  borderColor: exerciseDone === v ? 'var(--color-terracotta)' : 'var(--color-hairline)',
+                  backgroundColor: exerciseDone === v ? 'color-mix(in srgb, var(--color-terracotta) 8%, transparent)' : 'transparent',
+                  color: exerciseDone === v ? 'var(--color-terracotta)' : 'var(--color-muted)',
                 }}
               >
                 {v ? 'Yes' : 'No'}

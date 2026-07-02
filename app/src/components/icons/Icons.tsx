@@ -61,6 +61,27 @@ export function SettingsIcon({ size = 22, color = 'currentColor', className }: I
   )
 }
 
+/* ── Theme icons ────────────────────────────────────────────────────────── */
+
+export function SunIcon({ size = 22, color = 'currentColor', className }: IconProps) {
+  return (
+    <svg {...base(size)} className={className} fill={color}>
+      <circle cx="12" cy="12" r="4.6" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
+        <rect key={a} x="11.15" y="1.4" width="1.7" height="4" rx="0.85" transform={`rotate(${a} 12 12)`} />
+      ))}
+    </svg>
+  )
+}
+
+export function MoonIcon({ size = 22, color = 'currentColor', className }: IconProps) {
+  return (
+    <svg {...base(size)} className={className} fill={color}>
+      <path d="M20.2 14.9A8.6 8.6 0 1 1 9.4 4.1a7 7 0 0 0 10.8 10.8Z" />
+    </svg>
+  )
+}
+
 /* ── Moment-type icons ──────────────────────────────────────────────────── */
 
 function PhotoIcon({ size, color }: Required<Pick<IconProps, 'size' | 'color'>>) {

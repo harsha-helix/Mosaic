@@ -5,8 +5,9 @@ import { MOMENT_COLORS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId
 import { RememberToggle } from '../RememberToggle/RememberToggle'
 import { MomentIcon } from '../icons/Icons'
 import { textOnAccent } from '../../lib/theme'
-import { appendMoment, enqueueSyncItem } from '../../lib/db/queries'
+import { appendMoment, enqueueSyncItem, saveThumbnail } from '../../lib/db/queries'
 import { pushMoments, pushMedia } from '../../lib/drive/operations'
+import { processForUpload, makeThumbnail } from '../../lib/media'
 import { silentSignIn } from '../../lib/drive/client'
 import { useTodayStore } from '../../store/today'
 
@@ -115,10 +116,16 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
       .catch(() => enqueueSyncItem('moments', 'moments/' + date + '.json', JSON.stringify(updated)))
 
     if (photo) {
-      const ext = photo.name.split('.').pop() ?? 'jpg'
+      // Downscale before storing or uploading (docs/11 D4): a raw camera
+      // photo is 3–8 MB and routinely fails to finish uploading on a mobile
+      // connection; ~1600px JPEG is 200–500 KB. The thumbnail goes straight
+      // to IndexedDB so this photo renders instantly in every list, offline,
+      // without ever re-fetching from Drive.
+      const { blob: upload, ext } = await processForUpload(photo)
+      makeThumbnail(upload).then(t => { if (t) saveThumbnail(id, t).catch(() => {}) })
       silentSignIn()
-        .then(() => pushMedia(id, photo!, ext))
-        .catch(() => enqueueSyncItem('media', 'media/' + id + '.' + ext, photo!))
+        .then(() => pushMedia(id, upload, ext))
+        .catch(() => enqueueSyncItem('media', 'media/' + id + '.' + ext, upload))
     }
 
     // Give the tile-drop shared-layout animation a moment to register
@@ -129,7 +136,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
     setTimeout(onClose, 90)
   }
 
-  const color = type ? MOMENT_COLORS[type] : '#C1633D'
+  const color = type ? MOMENT_COLORS[type] : 'var(--color-terracotta)'
 
   return (
     <motion.div
@@ -172,7 +179,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
                       key={t}
                       onClick={() => selectType(t)}
                       className="flex flex-col items-center gap-2 p-4 rounded-card active:scale-95 transition-transform"
-                      style={{ backgroundColor: `${c}1A` }}
+                      style={{ backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)` }}
                     >
                       <MomentIcon type={t} size={24} color={c} />
                       <span className="text-[12px] font-medium" style={{ color: c }}>
@@ -187,7 +194,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
             <motion.div key="capture" variants={STEP_VARIANTS} initial="initial" animate="animate" exit="exit">
               <div className="flex items-center gap-3 mb-5">
                 <button onClick={() => setStep('picker')} className="text-terracotta text-[15px] font-medium">←</button>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${color}1A` }}>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)` }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                   <span className="text-[13px] font-medium" style={{ color }}>{type && TYPE_LABELS[type]}</span>
                 </div>

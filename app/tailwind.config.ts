@@ -9,25 +9,29 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Base — cream / parchment. Dark = "ink and ember": near-black
-        // warm-tinted base with bigger tonal steps between page/card/raised
-        // surfaces than before, so layers actually separate in dark mode.
+        // Base — cream / parchment. Dark = neutral charcoal ramp (doc 15
+        // "Onboarding & Dark Theme Refresh" — supersedes the earlier warm
+        // "ink and ember" base): true-gray near-black, same tonal step
+        // sizes between page/card/raised surfaces as the old ramp so
+        // layering still separates, but with the warmth pulled out of the
+        // floor. The five accent hues below stay warm and do the color-
+        // identity work by contrast instead of sitting on another warm layer.
         base: '#FAF3E7',
-        'base-dark': '#120E0A',
+        'base-dark': '#121212',
         surface: '#FFFBF3',
-        'surface-dark': '#1D1712',
+        'surface-dark': '#1C1C1C',
         elevated: '#F4EAD9',
-        'elevated-dark': '#2C2318',
+        'elevated-dark': '#282828',
         // Text
         ink: '#2B2420',
-        'ink-dark': '#FBF5EA',
+        'ink-dark': '#EDEDEC',
         muted: '#6B5F52',
-        'muted-dark': '#D2BEA3',
+        'muted-dark': '#ACA9A3',
         hint: '#9A8E7E',
-        'hint-dark': '#93816C',
+        'hint-dark': '#87847E',
         // Border
         hairline: '#E5D9C6',
-        'hairline-dark': '#4A3B2A',
+        'hairline-dark': '#3A3A38',
         // Brand + accent clusters — values come from CSS custom properties
         // (see :root / .dark in index.css) so every Tailwind class that
         // uses them (bg-terracotta, text-warmth, etc) is automatically

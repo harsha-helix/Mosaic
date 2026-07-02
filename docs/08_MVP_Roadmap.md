@@ -143,7 +143,7 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 ---
 
 ## Phase 4 — Feel & Identity
-**Goal:** Close the "feels like a form" gap. Source: [`10_UIUX_Audit.md`](./10_UIUX_Audit.md) priorities + capture redesign in [`12_Capture_UX_Grouped_Grid.md`](./12_Capture_UX_Grouped_Grid.md).
+**Goal:** Close the "feels like a form" gap. Source: [`10_UIUX_Audit.md`](./10_UIUX_Audit.md) priorities + capture redesign in [`12_Capture_UX_Grouped_Grid.md`](./12_Capture_UX_Grouped_Grid.md) + onboarding/theme refresh in [`15_Onboarding_and_Dark_Theme_Refresh.md`](./15_Onboarding_and_Dark_Theme_Refresh.md).
 
 - [ ] Consolidate the four MomentCard implementations (audit #2 — do first, so photos are added once)
 - [ ] Photo playback: thumbnail component (reads IndexedDB thumbs from Phase 3) in Highlights, Search, Day View, Home (audit #1)
@@ -152,6 +152,8 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 - [ ] Motion layer: bottom-sheet slide-up first, then route transitions (audit #4)
 - [ ] Today mosaic tile strip on Home + tile-drop animation (audit #5)
 - [ ] Polish: Evening "back" → "←", onboarding success beat, RememberToggle decision (audit #7)
+- [ ] **Onboarding restructure** — static form → 4-step flow with progress dots + entrance/transition motion (doc 15, Part A)
+- [ ] **Dark theme refresh** — neutral charcoal base/text/border tokens, accents unchanged (doc 15, Part B)
 
 **Done when:** the app has a mosaic in it, photos come back, and capture feels faster than before.
 

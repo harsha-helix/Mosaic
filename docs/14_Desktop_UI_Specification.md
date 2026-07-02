@@ -123,6 +123,8 @@ Component: new shared `Dialog` wrapper (backdrop + centered card + scale motion 
 
 ### 1. Onboarding
 
+> **Superseded by `15_Onboarding_and_Dark_Theme_Refresh.md`** (2026-07-02) — onboarding moves from one static form to a multi-step flow. The 440px centered-card/`dialog-width-form` treatment below still holds on desktop; only the card's *contents* change per doc 15.
+
 Single column stays single column — centering it is the entire fix.
 
 ```
@@ -131,9 +133,9 @@ Single column stays single column — centering it is the entire fix.
 │                                                          │
 │              ┌────────────────────────┐                │
 │              │      ✦ Mosaic          │                │
-│              │  "Version control      │                │
-│              │   for a life well      │                │
-│              │   lived."               │                │
+│              │  "Made of the moments  │                │
+│              │   you'd otherwise      │                │
+│              │   forget."              │                │
 │              │  ──────────────────    │                │
 │              │  What should we call   │                │
 │              │  you?                  │                │

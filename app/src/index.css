@@ -32,9 +32,14 @@
     --color-sage: #A8C17E;
     --color-mauve: #C793AF;
     --color-danger: #E2776A;
-    --color-hairline: #4A3B2A;
-    --color-muted: #D2BEA3;
-    --color-hint: #93816C;
+    /* Neutral charcoal ramp (doc 15) — must match tailwind.config.ts's
+       `hairline-dark` / `muted-dark` / `hint-dark` exactly. These three
+       exist in both places (Tailwind classes here read the config values,
+       inline style={{color: 'var(--color-muted)'}} call sites like
+       Settings/Search read these), so both must move together or they drift. */
+    --color-hairline: #3A3A38;
+    --color-muted: #ACA9A3;
+    --color-hint: #87847E;
   }
 
   html {

@@ -186,40 +186,42 @@ export default function SettingsScreen() {
           </div>
         </div>
 
-        {/* Profile & Reminders */}
+        {/* Preferences — same paired-card row language (rounded-card /
+            shadow-card / bg-surface / divide-y) as Onboarding's Reminders
+            step (docs/16 §6), since both edit the same underlying data
+            (display name + notification times in meta.json). */}
         <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
-        <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Profile &amp; reminders</p>
-        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4 space-y-3">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide lg:hidden">Profile &amp; reminders</p>
+        <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Preferences</p>
+        <div className="space-y-3">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide lg:hidden">Preferences</p>
 
-          <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Your name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Your name"
-              className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1 space-y-1.5">
-              <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Morning reminder</label>
+          <div className="rounded-card bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark divide-y divide-hairline dark:divide-hairline-dark overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-[15px] font-medium text-ink dark:text-ink-dark">Name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Your name"
+                className="bg-transparent text-ink dark:text-ink-dark text-[15px] outline-none text-right"
+              />
+            </div>
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-[15px] font-medium text-ink dark:text-ink-dark">Morning</span>
               <input
                 type="time"
                 value={morningTime}
                 onChange={e => setMorningTime(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
+                className="bg-transparent text-ink dark:text-ink-dark text-[15px] outline-none text-right"
               />
             </div>
-            <div className="flex-1 space-y-1.5">
-              <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Evening reminder</label>
+            <div className="flex items-center justify-between px-4 py-4">
+              <span className="text-[15px] font-medium text-ink dark:text-ink-dark">Evening</span>
               <input
                 type="time"
                 value={eveningTime}
                 onChange={e => setEveningTime(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
+                className="bg-transparent text-ink dark:text-ink-dark text-[15px] outline-none text-right"
               />
             </div>
           </div>
@@ -238,7 +240,7 @@ export default function SettingsScreen() {
           {profileMessage && profileState === 'error' && (
             <p className="text-[12px] text-center" style={{ color: 'var(--color-danger)' }}>{profileMessage}</p>
           )}
-          <p className="text-[11px] text-hint dark:text-hint-dark leading-relaxed">
+          <p className="text-[11px] text-hint dark:text-hint-dark leading-relaxed px-1">
             Reminder times are stored, but push notifications aren't built yet — this is groundwork for that.
           </p>
         </div>

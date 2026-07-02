@@ -6,6 +6,7 @@ import { BottomNav } from './components/BottomNav/BottomNav'
 import { SidebarNav } from './components/SidebarNav/SidebarNav'
 import { FAB } from './components/FAB/FAB'
 import { MomentCapture } from './components/MomentCapture/MomentCapture'
+import { Lightbox } from './components/Lightbox/Lightbox'
 import { useAuthStore } from './store/auth'
 import { useTodayStore } from './store/today'
 import { getEntry, getMoments, getFileId } from './lib/db/queries'
@@ -224,6 +225,7 @@ function AppShell() {
       <AnimatePresence>
         {showCapture && <MomentCapture onClose={() => setShowCapture(false)} />}
       </AnimatePresence>
+      <Lightbox />
     </div>
   )
 }

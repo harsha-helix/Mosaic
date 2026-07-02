@@ -48,6 +48,16 @@ export async function appendMoment(date: string, moment: Moment): Promise<Moment
   return updated
 }
 
+// Patches an already-saved moment in place (used by capture's quick-log
+// "add note" follow-up — edits the just-saved body-type moment instead of
+// appending a duplicate). No-op if the id isn't found.
+export async function updateMoment(date: string, id: string, patch: Partial<Moment>): Promise<Moment[]> {
+  const existing = await getMoments(date)
+  const updated = existing.map(m => (m.id === id ? { ...m, ...patch } : m))
+  await saveMoments(date, updated)
+  return updated
+}
+
 // ── File Index ────────────────────────────────────────────────────────────────
 
 export async function getFileId(path: string): Promise<string | undefined> {

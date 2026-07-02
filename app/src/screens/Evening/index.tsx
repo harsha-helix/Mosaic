@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { MetricCircles } from '../../components/MetricCircles/MetricCircles'
 import { RememberToggle } from '../../components/RememberToggle/RememberToggle'
 import { useTodayStore } from '../../store/today'
@@ -14,36 +15,49 @@ function todayLabel() {
   return new Date().toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
+// Concept B "warmer terminal" (docs/16 §7): keeps the git-inspired beat
+// structure and pacing (pulse → fade to dark → typed commit message →
+// confetti → slide down to Home) but drops the literal green-on-black
+// terminal skin for the app's own dark-theme tokens, and types
+// character-by-character instead of a full line every 400ms.
 function CommitCeremony({ message, date, onDone }: { message: string; date: string; onDone: () => void }) {
-  const [lines, setLines] = useState<string[]>([])
+  const [charCount, setCharCount] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  const allLines = [
+  const fullText = [
     '> committing ' + date + '...',
     ...(message.trim() ? ['> ' + message.trim()] : []),
-    '> checkmark day committed',
-  ]
+    '> ✓ day committed',
+  ].join('\n')
 
   useEffect(() => {
-    let i = 0
     const interval = setInterval(() => {
-      setLines(prev => [...prev, allLines[i]])
-      i++
-      if (i >= allLines.length) {
-        clearInterval(interval)
-        setTimeout(() => setShowConfetti(true), 300)
-        setTimeout(onDone, 1800)
-      }
-    }, 400)
+      setCharCount(c => {
+        const next = c + 1
+        if (next >= fullText.length) {
+          clearInterval(interval)
+          setTimeout(() => setShowConfetti(true), 300)
+          setTimeout(onDone, 1800)
+        }
+        return next
+      })
+    }, 16)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#120E0A] flex flex-col items-center justify-center px-8">
-      <div className="w-full max-w-sm space-y-2">
-        {lines.map((line, i) => (
-          <p key={i} className="font-mono text-[14px] text-green-400 leading-relaxed">{line}</p>
-        ))}
+    <motion.div
+      className="fixed inset-0 z-50 bg-base-dark flex flex-col items-center justify-center px-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+    >
+      <div className="w-full max-w-sm">
+        <p className="font-mono text-[14px] text-ink-dark leading-relaxed whitespace-pre-wrap">
+          {fullText.slice(0, charCount)}
+          {charCount < fullText.length && <span className="text-warmth">▍</span>}
+        </p>
       </div>
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -67,7 +81,7 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
         </div>
       )}
       <style>{`@keyframes fall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }`}</style>
-    </div>
+    </motion.div>
   )
 }
 
@@ -90,6 +104,7 @@ export default function EveningScreen() {
   const [commitMsg, setCommitMsg]           = useState('')
   const [remember, setRemember]             = useState(false)
   const [saving, setSaving]                 = useState(false)
+  const [pulsing, setPulsing]               = useState(false)
   const [ceremony, setCeremony]             = useState(false)
 
   async function handleCommit() {
@@ -130,8 +145,12 @@ export default function EveningScreen() {
       .then(() => pushEntry(updated))
       .catch(() => enqueueSyncItem('entry', 'entries/' + updated.date + '.json', JSON.stringify(updated)))
 
-    setSaving(false)
-    setCeremony(true)
+    // Lead-in beat (docs/16 §7): button pulses briefly before the screen
+    // hands off to the full-screen ceremony, instead of cutting straight to
+    // it. saving stays true through the pulse so the button doesn't flash
+    // back to its idle label for one frame.
+    setPulsing(true)
+    setTimeout(() => setCeremony(true), 260)
   }
 
   if (ceremony) {
@@ -267,12 +286,17 @@ export default function EveningScreen() {
           onClick={handleCommit}
           disabled={saving}
           className="w-full py-4 rounded-btn bg-terracotta font-display font-bold text-[18px] disabled:opacity-60 active:scale-[0.98] transition-transform"
-          style={{ color: '#3D1F12', boxShadow: 'inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)' }}
+          style={{
+            color: '#3D1F12',
+            boxShadow: 'inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)',
+            animation: pulsing ? 'commit-pulse 260ms ease-out' : undefined,
+          }}
         >
           {saving ? 'Committing...' : 'Commit ✦'}
         </button>
       </div>
       </div>
+      <style>{`@keyframes commit-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }`}</style>
     </div>
   )
 }

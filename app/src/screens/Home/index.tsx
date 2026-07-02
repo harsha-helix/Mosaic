@@ -9,6 +9,7 @@ import type { Moment } from '../../types'
 import { METRIC_COLORS, MOMENT_COLORS } from '../../types'
 import { DayGlyph } from '../../components/DayGlyph/DayGlyph'
 import { PhotoThumbnail } from '../../components/PhotoThumbnail/PhotoThumbnail'
+import { useLightboxStore } from '../../store/lightbox'
 
 const FALLBACK_QUOTES = [
   "The goal is not to remember every day. The goal is to notice every day.",
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const navigate = useNavigate()
   const { entry, moments } = useTodayStore()
   const { displayName } = useAuthStore()
+  const openLightbox = useLightboxStore(s => s.open)
   const [morningDismissed, setMorningDismissed] = useState(false)
   const [eveningDismissed, setEveningDismissed] = useState(false)
   const [quote] = useState(() => FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)])
@@ -123,10 +125,17 @@ export default function HomeScreen() {
         >
           <p className="text-[12px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--color-warmth)' }}>Last beautiful thing</p>
           {lastBeautiful.media_id && (
-            <PhotoThumbnail
-              mediaId={lastBeautiful.media_id}
-              className="w-full max-h-40 object-cover rounded-input mb-2"
-            />
+            <button
+              type="button"
+              onClick={() => openLightbox(lastBeautiful)}
+              className="block w-full mb-2"
+              aria-label="Open photo"
+            >
+              <PhotoThumbnail
+                mediaId={lastBeautiful.media_id}
+                className="w-full max-h-40 object-cover rounded-input"
+              />
+            </button>
           )}
           <p className="text-[15px] text-ink dark:text-ink-dark leading-relaxed line-clamp-2">{lastBeautiful.text}</p>
           <p className="text-[12px] text-hint dark:text-hint-dark mt-1">{formatDateLabel(lastBeautiful.captured_at.slice(0, 10))}</p>

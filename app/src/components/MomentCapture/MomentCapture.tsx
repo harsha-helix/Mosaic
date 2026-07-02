@@ -5,20 +5,28 @@ import { MOMENT_COLORS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId
 import { RememberToggle } from '../RememberToggle/RememberToggle'
 import { MomentIcon } from '../icons/Icons'
 import { textOnAccent } from '../../lib/theme'
-import { appendMoment, enqueueSyncItem, saveThumbnail } from '../../lib/db/queries'
+import { appendMoment, updateMoment, enqueueSyncItem, saveThumbnail } from '../../lib/db/queries'
 import { pushMoments, pushMedia } from '../../lib/drive/operations'
 import { processForUpload, makeThumbnail } from '../../lib/media'
 import { silentSignIn } from '../../lib/drive/client'
 import { useTodayStore } from '../../store/today'
 import { useIsDesktop } from '../../lib/useIsDesktop'
 
-const MOMENT_TYPES: MomentType[] = [
-  'photo', 'beautiful', 'idea',
-  'gratitude', 'anxiety', 'conversation',
-  'reading', 'music', 'quote',
-  'workout', 'coffee', 'nicotine',
-  'place', 'insight',
+// Grouped picker (docs/12_Capture_UX_Grouped_Grid.md): 14 types organized
+// into 4 fixed, semantic groups so the eye scans a group first, then a
+// type — spatial memory instead of a full-grid search every time. Order
+// and membership are fixed (no frecency reordering) by design.
+const GROUPS: { label: string; types: MomentType[] }[] = [
+  { label: 'Mind',           types: ['idea', 'insight', 'gratitude', 'anxiety'] },
+  { label: 'World',          types: ['beautiful', 'photo', 'place', 'music'] },
+  { label: 'Words & People', types: ['conversation', 'quote', 'reading'] },
+  { label: 'Body',           types: ['coffee', 'nicotine', 'workout'] },
 ]
+
+// Body types are usually logged with no text — tapping the type saves a
+// text-less moment immediately instead of opening the capture screen
+// (doc 12 "Quick-log for Body types"): FAB → type is the full 2-tap flow.
+const QUICK_LOG_TYPES: MomentType[] = ['coffee', 'nicotine', 'workout']
 
 const TYPE_LABELS: Record<MomentType, string> = {
   photo: 'Photo', beautiful: 'Beautiful', idea: 'Idea',
@@ -68,7 +76,7 @@ function todayDate() {
 }
 
 export function MomentCapture({ onClose }: MomentCaptureProps) {
-  const [step, setStep] = useState<'picker' | 'capture'>('picker')
+  const [step, setStep] = useState<'picker' | 'capture' | 'quicklog'>('picker')
   const [type, setType] = useState<MomentType | null>(null)
   const [text, setText] = useState('')
   const [remember, setRemember] = useState(false)
@@ -81,8 +89,15 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
   // visual — Mosaic tile"). Only visible for the brief window between save
   // and the sheet closing.
   const [flyingTile, setFlyingTile] = useState<{ id: string; color: string } | null>(null)
+  // Set when a body-type quick-log just saved — drives the "logged · add
+  // note?" confirmation panel (doc 12). editingMomentId, when set, means the
+  // capture screen is annotating that already-saved moment rather than
+  // creating a new one.
+  const [quickLogged, setQuickLogged] = useState<{ id: string; type: MomentType } | null>(null)
+  const [editingMomentId, setEditingMomentId] = useState<string | null>(null)
+  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const { addMoment } = useTodayStore()
+  const { addMoment, patchMoment } = useTodayStore()
   const isDesktop = useIsDesktop()
 
   // Esc-to-dismiss — a desktop dialog convention (docs/14), harmless as an
@@ -95,9 +110,47 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
 
+  useEffect(() => () => { if (autoCloseRef.current) clearTimeout(autoCloseRef.current) }, [])
+
   function selectType(t: MomentType) {
+    if (QUICK_LOG_TYPES.includes(t)) { quickLog(t); return }
     setType(t)
     setRemember(REMEMBER_DEFAULTS[t] ?? false)
+    setText('')
+    setPhoto(null)
+    setPhotoPreview(null)
+    setStep('capture')
+  }
+
+  // Body types (coffee/nicotine/workout) save immediately with no text —
+  // FAB → type is the whole flow (doc 12). Confirmation panel offers an
+  // optional "Add note" follow-up; otherwise the sheet auto-closes.
+  async function quickLog(t: MomentType) {
+    const date = todayDate()
+    const id = generateMomentId()
+    const color = MOMENT_COLORS[t]
+
+    const moment = { id, captured_at: new Date().toISOString(), type: t, text: '' }
+    const updated = await appendMoment(date, moment)
+    addMoment(moment)
+
+    silentSignIn()
+      .then(() => pushMoments(date, updated))
+      .catch(() => enqueueSyncItem('moments', 'moments/' + date + '.json', JSON.stringify(updated)))
+
+    setFlyingTile({ id, color })
+    setQuickLogged({ id, type: t })
+    setStep('quicklog')
+
+    autoCloseRef.current = setTimeout(onClose, 1600)
+  }
+
+  function addNoteToQuickLog() {
+    if (!quickLogged) return
+    if (autoCloseRef.current) clearTimeout(autoCloseRef.current)
+    setEditingMomentId(quickLogged.id)
+    setType(quickLogged.type)
+    setRemember(false)
     setText('')
     setPhoto(null)
     setPhotoPreview(null)
@@ -113,24 +166,38 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
 
   async function handleSave() {
     if (!type) return
-    if (!text.trim() && !photo) return
+    if (!editingMomentId && !text.trim() && !photo) return
     setSaving(true)
 
     const date = todayDate()
-    const id = generateMomentId()
+    // Annotating a quick-logged body moment reuses its id (so photo's
+    // media_id convention — same id as the moment — still holds); otherwise
+    // this is a brand new moment.
+    const id = editingMomentId ?? generateMomentId()
     const color = MOMENT_COLORS[type]
 
-    const moment = {
-      id,
-      captured_at: new Date().toISOString(),
-      type,
-      text: text.trim() || '',
-      ...(remember && { remember: true }),
-      ...(photo && { media_id: id }),
-    }
+    let updated: Awaited<ReturnType<typeof appendMoment>>
 
-    const updated = await appendMoment(date, moment)
-    addMoment(moment)
+    if (editingMomentId) {
+      const patch = {
+        text: text.trim(),
+        ...(remember && { remember: true }),
+        ...(photo && { media_id: id }),
+      }
+      updated = await updateMoment(date, id, patch)
+      patchMoment(id, patch)
+    } else {
+      const moment = {
+        id,
+        captured_at: new Date().toISOString(),
+        type,
+        text: text.trim() || '',
+        ...(remember && { remember: true }),
+        ...(photo && { media_id: id }),
+      }
+      updated = await appendMoment(date, moment)
+      addMoment(moment)
+    }
 
     // On failure, queue for retry on next app open / reconnect.
     silentSignIn()
@@ -148,6 +215,13 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
       silentSignIn()
         .then(() => pushMedia(id, upload, ext))
         .catch(() => enqueueSyncItem('media', 'media/' + id + '.' + ext, upload))
+    }
+
+    if (editingMomentId) {
+      // Tile already flew to the mosaic strip when this moment was
+      // quick-logged — just close, no second animation.
+      onClose()
+      return
     }
 
     // Give the tile-drop shared-layout animation a moment to register
@@ -193,29 +267,58 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
               <h2 className="font-display text-[20px] font-semibold text-ink dark:text-ink-dark mb-5">
                 What's happening?
               </h2>
-              <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
-                {MOMENT_TYPES.map(t => {
-                  const c = MOMENT_COLORS[t]
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => selectType(t)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-card active:scale-95 transition-transform"
-                      style={{ backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)` }}
-                    >
-                      <MomentIcon type={t} size={24} color={c} />
-                      <span className="text-[12px] font-medium" style={{ color: c }}>
-                        {TYPE_LABELS[t]}
-                      </span>
-                    </button>
-                  )
-                })}
+              {GROUPS.map((group, gi) => (
+                <div key={group.label} className={gi > 0 ? 'mt-3' : ''}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-hint dark:text-hint-dark mb-2">
+                    {group.label}
+                  </p>
+                  <div className={'grid gap-3 ' + (group.types.length === 3 ? 'grid-cols-3' : 'grid-cols-4')}>
+                    {group.types.map(t => {
+                      const c = MOMENT_COLORS[t]
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => selectType(t)}
+                          className="flex flex-col items-center gap-2 p-3 rounded-card active:scale-95 transition-transform"
+                          style={{ backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)` }}
+                        >
+                          <MomentIcon type={t} size={22} color={c} />
+                          <span className="text-[11px] font-medium" style={{ color: c }}>
+                            {TYPE_LABELS[t]}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          ) : step === 'quicklog' && quickLogged ? (
+            <motion.div key="quicklog" variants={STEP_VARIANTS} initial="initial" animate="animate" exit="exit" className="py-6 flex flex-col items-center text-center">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+                style={{ backgroundColor: `color-mix(in srgb, ${MOMENT_COLORS[quickLogged.type]} 14%, transparent)` }}
+              >
+                <MomentIcon type={quickLogged.type} size={26} color={MOMENT_COLORS[quickLogged.type]} />
               </div>
+              <p className="font-display text-[16px] font-semibold text-ink dark:text-ink-dark">
+                {TYPE_LABELS[quickLogged.type]} logged
+              </p>
+              <button
+                onClick={addNoteToQuickLog}
+                className="mt-4 text-[14px] font-medium"
+                style={{ color: 'var(--color-terracotta)' }}
+              >
+                Add note
+              </button>
             </motion.div>
           ) : (
             <motion.div key="capture" variants={STEP_VARIANTS} initial="initial" animate="animate" exit="exit">
               <div className="flex items-center gap-3 mb-5">
-                <button onClick={() => setStep('picker')} className="text-terracotta text-[15px] font-medium">←</button>
+                <button
+                  onClick={() => (editingMomentId ? onClose() : setStep('picker'))}
+                  className="text-terracotta text-[15px] font-medium"
+                >←</button>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)` }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                   <span className="text-[13px] font-medium" style={{ color }}>{type && TYPE_LABELS[type]}</span>

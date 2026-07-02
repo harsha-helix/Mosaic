@@ -1,6 +1,7 @@
 import type { Moment } from '../../types'
 import { MOMENT_COLORS } from '../../types'
 import { PhotoThumbnail } from '../PhotoThumbnail/PhotoThumbnail'
+import { useLightboxStore } from '../../store/lightbox'
 
 interface MomentCardProps {
   moment: Moment
@@ -21,6 +22,7 @@ function formatDate(iso: string) {
 }
 
 export function MomentCard({ moment, variant = 'default', highlightHtml, dateFormat = 'datetime', onClick }: MomentCardProps) {
+  const openLightbox = useLightboxStore(s => s.open)
   const color = MOMENT_COLORS[moment.type] ?? 'var(--color-hint)'
   const label = moment.type.charAt(0).toUpperCase() + moment.type.slice(1)
   const compact = variant === 'compact'
@@ -65,10 +67,17 @@ export function MomentCard({ moment, variant = 'default', highlightHtml, dateFor
       ) : null}
 
       {moment.media_id && (
-        <PhotoThumbnail
-          mediaId={moment.media_id}
-          className={'w-full object-cover rounded-input mt-2 ' + (compact ? 'max-h-32' : 'max-h-48')}
-        />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); openLightbox(moment) }}
+          className="block w-full mt-2"
+          aria-label="Open photo"
+        >
+          <PhotoThumbnail
+            mediaId={moment.media_id}
+            className={'w-full object-cover rounded-input ' + (compact ? 'max-h-32' : 'max-h-48')}
+          />
+        </button>
       )}
     </Wrapper>
   )

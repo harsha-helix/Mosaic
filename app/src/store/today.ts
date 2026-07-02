@@ -8,6 +8,7 @@ interface TodayState {
   setEntry: (entry: DailyEntry) => void
   setMoments: (moments: Moment[]) => void
   addMoment: (moment: Moment) => void
+  patchMoment: (id: string, patch: Partial<Moment>) => void
   setLoaded: () => void
 }
 
@@ -18,5 +19,8 @@ export const useTodayStore = create<TodayState>((set) => ({
   setEntry: (entry) => set({ entry }),
   setMoments: (moments) => set({ moments }),
   addMoment: (moment) => set((s) => ({ moments: [...s.moments, moment] })),
+  patchMoment: (id, patch) => set((s) => ({
+    moments: s.moments.map(m => (m.id === id ? { ...m, ...patch } : m)),
+  })),
   setLoaded: () => set({ loaded: true }),
 }))

@@ -9,7 +9,7 @@ export type ThemeMode = 'light' | 'dark'
 // switcher) never shows a color seam against the page.
 const THEME_COLOR: Record<ThemeMode, string> = {
   light: '#FAF3E7',
-  dark: '#120E0A',
+  dark: '#121212',
 }
 
 function systemPrefersDark(): boolean {

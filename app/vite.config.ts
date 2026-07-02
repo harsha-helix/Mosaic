@@ -7,7 +7,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
+      // Was ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'] — none of
+      // those three paths match anything in public/ (no favicon.ico or
+      // apple-touch-icon.png exist, and the PNGs live flat in public/, not
+      // under an icons/ subfolder). vite-plugin-pwa was silently precaching
+      // nothing for the icon set. Fixed to the files that actually exist.
+      includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Mosaic',
         short_name: 'Mosaic',
@@ -21,10 +26,16 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
+        // Was 'icons/icon-192.png' / 'icons/icon-512.png' — there's no
+        // icons/ subfolder in public/, so the manifest's icon entries 404'd
+        // and installed PWAs fell back to a generic browser icon instead of
+        // the Mosaic mark. Paths now match where the files actually live
+        // (public/icon-192.png, public/icon-512.png — same as the <link
+        // rel="icon"> in index.html).
         icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

@@ -211,8 +211,8 @@ Single scrollable page. Shown once.
 │                              │
 │    ✦ Mosaic                  │  ← brand mark, large
 │                              │
-│  "Version control            │
-│   for a life well lived."    │  ← tagline, Display font
+│  "Made of the moments        │
+│   you'd otherwise forget."   │  ← tagline, Display font
 │                              │
 │  ──────────────────────      │
 │                              │

@@ -314,7 +314,7 @@ export default function SettingsScreen() {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <p className="text-[13px] text-muted dark:text-muted-dark">Version</p>
-              <p className="text-[13px] text-ink dark:text-ink-dark font-mono">0.2.5</p>
+              <p className="text-[13px] text-ink dark:text-ink-dark font-mono">0.3.0</p>
             </div>
             <div className="flex justify-between items-center">
               <p className="text-[13px] text-muted dark:text-muted-dark">Storage</p>

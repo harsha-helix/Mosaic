@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'Mosaic',
         short_name: 'Mosaic',
-        description: 'Version control for a life well lived.',
+        description: "Made of the moments you'd otherwise forget.",
         // Cream base — matches bg-base in tailwind.config.ts. These are
         // static (manifest.json can't react to the in-app theme toggle),
         // so they're set to the light default; the live status bar color

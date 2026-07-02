@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
       <div className="mb-10 text-center">
         <p className="font-display text-5xl font-bold text-ink dark:text-ink-dark">✦ Mosaic</p>
         <p className="font-display text-xl text-muted dark:text-muted-dark mt-2 italic">
-          Version control for a life well lived.
+          Made of the moments you'd otherwise forget.
         </p>
       </div>
 

@@ -123,7 +123,7 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 
 ---
 
-## Phase 3 — Sync Integrity & Mobile Performance  ← next
+## Phase 3 — Sync Integrity & Mobile Performance  ✅ Complete (2026-07-02)
 **Goal:** Trust the data; the phone stops being the weak device. Decision record: [`11_Sync_Integrity_and_Mobile_Performance.md`](./11_Sync_Integrity_and_Mobile_Performance.md).
 
 > Re-prioritized 2026-07-02 after direct inspection of the live Drive folder found **8 duplicate `meta.json` files** — root cause traced to `bootstrapDrive` checking only the local file index (never Drive) and `buildFileIndex` never indexing root files.
@@ -214,9 +214,9 @@ Phase 2 — Browse & Reflect  ✅ complete
     ↓
 Phase 2.5 — Sync Hardening  ✅ complete
     ↓
-Phase 3 — Sync Integrity & Mobile Perf   ← next  (trust first)
+Phase 3 — Sync Integrity & Mobile Perf   ✅ complete
     ↓
-Phase 4 — Feel & Identity                (glyph, photos, mosaic, motion)
+Phase 4 — Feel & Identity                (glyph, photos, mosaic, motion)  ← next
     ↓
 Phase 5 — Insights (lean) + Report Viewer
     ↓

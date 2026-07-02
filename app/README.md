@@ -1,6 +1,6 @@
 # Mosaic
 
-> Version control for a life well lived.
+> Made of the moments you'd otherwise forget.
 
 Mosaic is a personal daily-journaling PWA: a morning check-in, moment capture throughout the day, and an evening commit — all stored as human-readable JSON in your own Google Drive. No backend, no database, no account system beyond Google sign-in. Full design and architecture background lives in [`../docs`](../docs).
 

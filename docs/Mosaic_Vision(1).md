@@ -1,7 +1,7 @@
 
 # Mosaic
 
-> **Version control for a life well lived.**
+> **Made of the moments you'd otherwise forget.**
 
 ## Vision
 

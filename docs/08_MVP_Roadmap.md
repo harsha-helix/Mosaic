@@ -32,7 +32,7 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 - [x] Drive file index (`fileIndex`) populated on first load
 - [x] Bottom nav shell + screen routing working (blank screens)
 - [x] PWA manifest + icons added
-- [ ] Deployed to Vercel (deferred to end of MVP)
+- [x] Deployed to Vercel (deferred to end of MVP)
 
 **Done when:** App opens in Android Chrome, Google Drive auth works, app shell is installable as PWA.
 
@@ -191,7 +191,6 @@ These are intentionally out of scope until after the 30-day success metric is hi
 
 | Feature | Why deferred |
 |---|---|
-| Vercel deploy | Deferred to end of MVP |
 | Offline write queue UI | Silent retry is fine for single user |
 | Desktop layout | Mobile is the primary device |
 | Android widget | Useful but not essential for the loop |

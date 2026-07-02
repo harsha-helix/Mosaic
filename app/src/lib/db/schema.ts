@@ -38,9 +38,22 @@ interface MosaicDB extends DBSchema {
 
 let dbInstance: IDBPDatabase<MosaicDB> | null = null
 
+// A version bump (v1→v2→v3 so far) can only complete once every OTHER open
+// connection to the 'mosaic' DB has closed. On mobile, Chrome/Android keeps
+// backgrounded tabs and PWA instances alive far more aggressively than
+// desktop — so a stale connection left over from before a deploy can sit
+// there holding the old version open, and this device's upgrade transaction
+// then blocks silently forever (no error, no timeout — indistinguishable
+// from a hung "Setting up your Mosaic…" spinner). `blocking`/`blocked`
+// below make each side release the lock instead of deadlocking; the
+// timeout is a backstop so any hang still surfaces as a real error rather
+// than an infinite wait.
+const DB_OPEN_TIMEOUT_MS = 10000
+
 export async function getDb(): Promise<IDBPDatabase<MosaicDB>> {
   if (dbInstance) return dbInstance
-  dbInstance = await openDB<MosaicDB>('mosaic', 3, {
+
+  const openPromise = openDB<MosaicDB>('mosaic', 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('entry', { keyPath: 'date' })
@@ -58,6 +71,32 @@ export async function getDb(): Promise<IDBPDatabase<MosaicDB>> {
         db.createObjectStore('mediaThumb', { keyPath: 'mediaId' })
       }
     },
+    // Fires on THIS connection when a newer version tries to open elsewhere
+    // (e.g. this same tab/PWA after a fresh deploy reloads it). Closing
+    // immediately releases the lock so that other connection's upgrade can
+    // proceed instead of both sides waiting on each other.
+    blocking() {
+      dbInstance?.close()
+      dbInstance = null
+    },
+    // Fires on the NEW connection's open() request when it can't proceed
+    // because another connection hasn't responded to `blocking` yet (e.g.
+    // it's running old JS from before this fix). Nothing to do but log —
+    // the timeout below is what keeps the caller from hanging.
+    blocked() {
+      console.warn('IndexedDB upgrade blocked by another open connection to "mosaic"')
+    },
+    terminated() {
+      dbInstance = null
+    },
   })
+
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Local storage is taking too long to open. Try fully closing Mosaic (swipe it away from recent apps) and reopening it.'))
+    }, DB_OPEN_TIMEOUT_MS)
+  })
+
+  dbInstance = await Promise.race([openPromise, timeout])
   return dbInstance
 }

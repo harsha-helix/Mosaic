@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { MomentType } from '../../types'
 import { MOMENT_COLORS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId } from '../../types'
@@ -10,6 +10,7 @@ import { pushMoments, pushMedia } from '../../lib/drive/operations'
 import { processForUpload, makeThumbnail } from '../../lib/media'
 import { silentSignIn } from '../../lib/drive/client'
 import { useTodayStore } from '../../store/today'
+import { useIsDesktop } from '../../lib/useIsDesktop'
 
 const MOMENT_TYPES: MomentType[] = [
   'photo', 'beautiful', 'idea',
@@ -33,6 +34,16 @@ const SHEET_VARIANTS = {
   hidden: { y: '100%' },
   visible: { y: 0, transition: { type: 'spring' as const, stiffness: 340, damping: 32 } },
   exit: { y: '100%', transition: { duration: 0.2, ease: 'easeIn' as const } },
+}
+
+// Desktop dialog: scale+fade in place of the slide-up sheet (docs/14
+// §Full-screen flows → Dialogs: "conventional desktop dialog motion").
+// Picked at runtime via useIsDesktop() rather than a CSS-only swap because
+// these are transform/opacity values driven by Framer Motion, not classes.
+const DIALOG_VARIANTS = {
+  hidden: { scale: 0.96, opacity: 0 },
+  visible: { scale: 1, opacity: 1, transition: { duration: 0.18, ease: 'easeOut' as const } },
+  exit: { scale: 0.96, opacity: 0, transition: { duration: 0.15, ease: 'easeIn' as const } },
 }
 
 const BACKDROP_VARIANTS = {
@@ -72,6 +83,17 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
   const [flyingTile, setFlyingTile] = useState<{ id: string; color: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const { addMoment } = useTodayStore()
+  const isDesktop = useIsDesktop()
+
+  // Esc-to-dismiss — a desktop dialog convention (docs/14), harmless as an
+  // extra escape hatch on mobile too since there's no dedicated keyboard there.
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   function selectType(t: MomentType) {
     setType(t)
@@ -140,7 +162,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
+      className="fixed inset-0 z-50 flex flex-col justify-end lg:items-center lg:justify-center"
       initial="hidden"
       animate="visible"
       exit="exit"
@@ -160,10 +182,10 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
       )}
 
       <motion.div
-        className="relative bg-surface dark:bg-surface-dark rounded-t-sheet pb-8 pt-3 px-4 max-h-[90vh] overflow-y-auto"
-        variants={SHEET_VARIANTS}
+        className="relative bg-surface dark:bg-surface-dark rounded-t-sheet pb-8 pt-3 px-4 max-h-[90vh] overflow-y-auto lg:w-full lg:max-w-[480px] lg:rounded-card lg:shadow-card lg:dark:shadow-card-dark lg:max-h-[85vh] lg:p-6"
+        variants={isDesktop ? DIALOG_VARIANTS : SHEET_VARIANTS}
       >
-        <div className="w-10 h-1 bg-hairline dark:bg-hairline-dark rounded-full mx-auto mb-4" />
+        <div className="w-10 h-1 bg-hairline dark:bg-hairline-dark rounded-full mx-auto mb-4 lg:hidden" />
 
         <AnimatePresence mode="wait" initial={false}>
           {step === 'picker' ? (
@@ -171,7 +193,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
               <h2 className="font-display text-[20px] font-semibold text-ink dark:text-ink-dark mb-5">
                 What's happening?
               </h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
                 {MOMENT_TYPES.map(t => {
                   const c = MOMENT_COLORS[t]
                   return (

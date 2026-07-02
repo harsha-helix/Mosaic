@@ -40,7 +40,7 @@ let dbInstance: IDBPDatabase<MosaicDB> | null = null
 
 export async function getDb(): Promise<IDBPDatabase<MosaicDB>> {
   if (dbInstance) return dbInstance
-  dbInstance = await openDB<MosaicDB>('mosaic', 2, {
+  dbInstance = await openDB<MosaicDB>('mosaic', 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('entry', { keyPath: 'date' })
@@ -48,7 +48,13 @@ export async function getDb(): Promise<IDBPDatabase<MosaicDB>> {
         db.createObjectStore('fileIndex', { keyPath: 'path' })
         db.createObjectStore('syncQueue', { keyPath: 'id' })
       }
-      if (oldVersion < 2) {
+      if (oldVersion === 2) {
+        // v2 thumbnails were 256px and rendered blurry stretched to card
+        // width — drop them so they regenerate at the v3 size (800px) from
+        // the full-res images on Drive on next view.
+        db.deleteObjectStore('mediaThumb')
+      }
+      if (oldVersion < 3) {
         db.createObjectStore('mediaThumb', { keyPath: 'mediaId' })
       }
     },

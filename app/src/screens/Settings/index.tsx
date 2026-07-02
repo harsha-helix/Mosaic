@@ -151,38 +151,46 @@ export default function SettingsScreen() {
         <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Settings</h1>
       </div>
 
-      <div className="px-4 space-y-4 pb-24">
+      <div className="px-4 space-y-4 pb-24 lg:max-w-[760px] lg:mx-auto lg:space-y-6">
         {/* Account */}
-        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Account</p>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--color-terracotta) 13%, transparent)' }}>
-              <span className="font-display font-bold text-terracotta text-[17px]">
-                {displayName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="text-[15px] font-medium text-ink dark:text-ink-dark">{displayName}</p>
-              <p className="text-[12px] text-hint dark:text-hint-dark">Google Drive</p>
+        <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
+          <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Account</p>
+          <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
+            <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3 lg:hidden">Account</p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--color-terracotta) 13%, transparent)' }}>
+                <span className="font-display font-bold text-terracotta text-[17px]">
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <p className="text-[15px] font-medium text-ink dark:text-ink-dark">{displayName}</p>
+                <p className="text-[12px] text-hint dark:text-hint-dark">Google Drive</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Appearance */}
-        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Appearance</p>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[14px] font-medium text-ink dark:text-ink-dark">Dark theme</p>
-              <p className="text-[12px] text-hint dark:text-hint-dark">{theme === 'dark' ? 'On' : 'Off'}</p>
+        <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
+          <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Appearance</p>
+          <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
+            <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3 lg:hidden">Appearance</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[14px] font-medium text-ink dark:text-ink-dark">Dark theme</p>
+                <p className="text-[12px] text-hint dark:text-hint-dark">{theme === 'dark' ? 'On' : 'Off'}</p>
+              </div>
+              <ThemeToggle />
             </div>
-            <ThemeToggle />
           </div>
         </div>
 
         {/* Profile & Reminders */}
+        <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
+        <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Profile &amp; reminders</p>
         <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4 space-y-3">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide">Profile &amp; reminders</p>
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide lg:hidden">Profile &amp; reminders</p>
 
           <div className="space-y-1.5">
             <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Your name</label>
@@ -234,10 +242,13 @@ export default function SettingsScreen() {
             Reminder times are stored, but push notifications aren't built yet — this is groundwork for that.
           </p>
         </div>
+        </div>
 
         {/* Sync */}
+        <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
+        <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">Sync</p>
         <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4 space-y-3">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide">Sync</p>
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide lg:hidden">Sync</p>
           <p className="text-[13px] text-muted dark:text-muted-dark leading-relaxed">
             Push your data to Google Drive and pull any changes from other devices.
           </p>
@@ -293,10 +304,13 @@ export default function SettingsScreen() {
             If sync gets stuck on "Syncing…" with no result, background reconnect likely failed silently — this opens Google's sign-in directly.
           </p>
         </div>
+        </div>
 
         {/* About */}
+        <div className="lg:grid lg:grid-cols-[160px_1fr] lg:gap-6 lg:items-start">
+        <p className="hidden lg:block text-[13px] font-medium text-muted dark:text-muted-dark pt-4">About</p>
         <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
-          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">About</p>
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3 lg:hidden">About</p>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <p className="text-[13px] text-muted dark:text-muted-dark">Version</p>
@@ -307,6 +321,7 @@ export default function SettingsScreen() {
               <p className="text-[13px] text-ink dark:text-ink-dark">Your Google Drive</p>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Sign out */}

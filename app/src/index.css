@@ -80,3 +80,37 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+/* Desktop-only layout helpers (docs/14_Desktop_UI_Specification.md).
+   Written as plain CSS rather than long Tailwind arbitrary-value strings
+   because grid-template-areas needs multiple quoted rows — hand-written
+   here is more readable than a single escaped utility class. Every rule
+   is scoped to (min-width: 1024px), matching the `lg` breakpoint used
+   everywhere else in the app, and only ever *adds* a grid placement on
+   top of elements that already render in normal mobile document flow —
+   nothing here changes source order, so screens below 1024px are
+   byte-for-byte the same layout as before this file existed. */
+@media (min-width: 1024px) {
+  /* Home (docs/14 §2): two visual columns without touching the mobile
+     DOM order — each section keeps its original position in the source,
+     it just gets told which named cell to occupy once the grid is active. */
+  .home-grid-lg {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    grid-template-areas:
+      "greeting greeting"
+      "quote lastbeautiful"
+      "averages morningbanner"
+      "today eveningbanner";
+    column-gap: 24px;
+    row-gap: 20px;
+    align-items: start;
+  }
+  .area-greeting     { grid-area: greeting; }
+  .area-quote        { grid-area: quote; }
+  .area-averages     { grid-area: averages; }
+  .area-lastbeautiful{ grid-area: lastbeautiful; }
+  .area-today        { grid-area: today; }
+  .area-morningbanner{ grid-area: morningbanner; }
+  .area-eveningbanner{ grid-area: eveningbanner; }
+}

@@ -8,10 +8,14 @@
  * IndexedDB lets every list surface render instantly without touching Drive.
  */
 
-const FULL_MAX_EDGE = 1600
-const FULL_QUALITY = 0.8
-const THUMB_MAX_EDGE = 256
-const THUMB_QUALITY = 0.7
+// Quality tuning (2026-07-02): first pass used 1600px/q0.8 uploads and 256px
+// thumbs — the thumbs rendered blurry stretched to full card width. Uploads
+// now keep more detail and thumbs are sized for full-width cards on a 2–3x
+// DPR phone screen. Still far below raw camera size (3–8 MB → ~0.5–1 MB).
+const FULL_MAX_EDGE = 2048
+const FULL_QUALITY = 0.9
+const THUMB_MAX_EDGE = 800
+const THUMB_QUALITY = 0.8
 
 async function decode(blob: Blob): Promise<ImageBitmap | HTMLImageElement> {
   if ('createImageBitmap' in window) {

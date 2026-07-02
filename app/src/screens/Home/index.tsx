@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTodayStore } from '../../store/today'
 import { useAuthStore } from '../../store/auth'
-import { getAllEntries, getAllMoments } from '../../lib/db/queries'
+import { getEntriesInRange, getLatestMomentWhere } from '../../lib/db/queries'
 import { computeAverages, formatDateLabel } from '../../lib/utils'
 import type { Moment } from '../../types'
 import { METRIC_COLORS, MOMENT_COLORS } from '../../types'
@@ -51,11 +51,16 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function load() {
-      const [entries, allMoments] = await Promise.all([getAllEntries(), getAllMoments()])
+      // Bounded queries only (docs/11 D6): Home mounts on every app open, so
+      // it must never scan full history — last 7 days of entries, and a
+      // reverse-cursor walk that stops at the newest matching moment.
+      const end = new Date().toISOString().slice(0, 10)
+      const start = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10)
+      const [entries, beautiful] = await Promise.all([
+        getEntriesInRange(start, end),
+        getLatestMomentWhere(m => (m.type === 'beautiful' || m.type === 'photo') && !!m.text),
+      ])
       setAverages(computeAverages(entries))
-      const beautiful = allMoments
-        .filter(m => (m.type === 'beautiful' || m.type === 'photo') && m.text)
-        .sort((a, b) => b.captured_at.localeCompare(a.captured_at))[0] ?? null
       setLastBeautiful(beautiful)
     }
     load()
@@ -75,9 +80,9 @@ export default function HomeScreen() {
   const morning = entry?.morning
 
   return (
-    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-12 pb-6 space-y-5">
+    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-12 pb-6 space-y-5 lg:space-y-0 lg:px-10 lg:pt-16 lg:pb-16 lg:max-w-[1120px] lg:mx-auto home-grid-lg">
       {/* Greeting */}
-      <div>
+      <div className="area-greeting">
         <h1 className="font-display text-[28px] font-bold text-ink dark:text-ink-dark leading-tight">
           {greeting.text} {greeting.emoji}
         </h1>
@@ -85,7 +90,7 @@ export default function HomeScreen() {
       </div>
 
       {/* Quote card */}
-      <div className="rounded-card p-5 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark">
+      <div className="area-quote rounded-card p-5 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark">
         <p className="font-display text-[15px] italic text-muted dark:text-muted-dark leading-relaxed">
           "{quote}"
         </p>
@@ -93,7 +98,7 @@ export default function HomeScreen() {
 
       {/* 7-day averages */}
       {hasAverages && (
-        <div>
+        <div className="area-averages">
           <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Last 7 days</p>
           <div className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark flex flex-wrap gap-x-5 gap-y-2">
             <AverageChip label="Spark"   value={averages!.spark}   color={METRIC_COLORS.spark} />
@@ -113,7 +118,7 @@ export default function HomeScreen() {
       {/* Last beautiful thing */}
       {lastBeautiful && (
         <div
-          className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark relative overflow-hidden"
+          className="area-lastbeautiful rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark relative overflow-hidden"
           style={{ borderLeft: '3px solid var(--color-warmth)' }}
         >
           <p className="text-[12px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--color-warmth)' }}>Last beautiful thing</p>
@@ -129,7 +134,7 @@ export default function HomeScreen() {
       )}
 
       {/* Today status strip */}
-      <div>
+      <div className="area-today">
         <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Today</p>
         <div className="rounded-card p-4 bg-surface dark:bg-surface-dark shadow-card dark:shadow-card-dark flex items-center gap-3">
           {morningDone && morning ? (
@@ -168,7 +173,7 @@ export default function HomeScreen() {
       {showMorningBanner && (
         <button
           onClick={() => navigate('/morning')}
-          className="w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
+          className="area-morningbanner w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
           style={{ backgroundColor: 'var(--color-terracotta)' }}
         >
           <span className="font-display font-semibold text-[15px]" style={{ color: '#3D1F12' }}>Start your morning</span>
@@ -188,7 +193,7 @@ export default function HomeScreen() {
       {showEveningBanner && (
         <button
           onClick={() => navigate('/evening')}
-          className="w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform bg-ink dark:bg-elevated-dark"
+          className="area-eveningbanner w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform bg-ink dark:bg-elevated-dark"
         >
           <span className="font-display font-semibold text-ink-dark text-[15px]">Commit today before you sleep</span>
           <div className="flex items-center gap-2">

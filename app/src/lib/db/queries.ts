@@ -19,6 +19,15 @@ export async function getAllEntries(): Promise<DailyEntry[]> {
   return db.getAll('entry')
 }
 
+/**
+ * Date-bounded entry query (docs/11 D6): render paths must never load full
+ * history. Dates are YYYY-MM-DD strings, so lexicographic key range = date range.
+ */
+export async function getEntriesInRange(startDate: string, endDate: string): Promise<DailyEntry[]> {
+  const db = await getDb()
+  return db.getAll('entry', IDBKeyRange.bound(startDate, endDate))
+}
+
 // ── Moments ───────────────────────────────────────────────────────────────────
 
 export async function getMoments(date: string): Promise<Moment[]> {
@@ -122,6 +131,24 @@ export async function getAllMoments(): Promise<Moment[]> {
   const db = await getDb()
   const all = await db.getAll('moment')
   return all.flatMap(r => r.moments)
+}
+
+/**
+ * Newest moment matching a predicate, walking days newest-first via a
+ * reverse cursor and stopping at the first hit (docs/11 D6) — Home's "last
+ * beautiful thing" card needs one moment, not the full history in memory.
+ */
+export async function getLatestMomentWhere(predicate: (m: Moment) => boolean): Promise<Moment | null> {
+  const db = await getDb()
+  let cursor = await db.transaction('moment').store.openCursor(null, 'prev')
+  while (cursor) {
+    const match = [...cursor.value.moments]
+      .sort((a, b) => b.captured_at.localeCompare(a.captured_at))
+      .find(predicate)
+    if (match) return match
+    cursor = await cursor.continue()
+  }
+  return null
 }
 
 export async function clearFileIndex(): Promise<void> {

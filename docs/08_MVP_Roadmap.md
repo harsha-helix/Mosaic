@@ -134,7 +134,8 @@ The roadmap is sequenced to reach that bar as fast as possible, then layer every
 - [x] Media: downscale at capture (1600px JPEG q0.8 via `lib/media.ts`), 256px thumbnail in IndexedDB (`mediaThumb` store, DB v2), presence-check before upload/replay; `PhotoThumbnail` renders local-first with Drive fallback + backfill (D4) — 2026-07-02
 - [x] Auth: silent-refresh on `visibilitychange` + queue flush; sign-out no longer clears the file index or data (D5) — 2026-07-02
 - [x] `pageToken` loops in `listFolder`/`searchFolder`; `appProperties: {mosaic:'root'}` marker on new root folders (D6, partial) — 2026-07-02
-- [ ] Perf remainder (D6): date-range queries on Home (no unbounded `getAll*` on render paths), chunked full-history sync
+- [x] Perf remainder (D6): Home uses `getEntriesInRange` (last 7 days) + `getLatestMomentWhere` (reverse cursor, stops at first match) — no unbounded `getAll*` on Home's render path; full-history pulls run in batches of 5 with event-loop yields — 2026-07-02
+- [x] Image quality pass: uploads 2048px JPEG q0.9 (was 1600/q0.8), thumbnails 800px q0.8 (was 256/q0.7 — blurry at card width); DB v3 drops old 256px thumbs so they regenerate from Drive full-res on next view — 2026-07-02
 - [x] Onboarding notification times persisted; Settings has name + reminder-time editing (D7) — done in ui-overhaul pass
 
 **Done when:** fresh device sign-in creates zero root files; one `meta.json` exists; phone-captured photos appear on laptop; Home is jank-free on the phone.

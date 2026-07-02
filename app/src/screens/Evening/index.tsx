@@ -145,8 +145,9 @@ export default function EveningScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-base dark:bg-base-dark">
-      <div className="flex items-center gap-4 px-4 pt-14 pb-4">
+    <div className="min-h-screen bg-base dark:bg-base-dark lg:flex lg:items-center lg:justify-center lg:py-12 lg:px-6">
+      <div className="lg:w-full lg:max-w-[600px] lg:bg-surface lg:dark:bg-surface-dark lg:rounded-card lg:shadow-card lg:dark:shadow-card-dark lg:overflow-hidden">
+      <div className="flex items-center gap-4 px-4 pt-14 pb-4 lg:pt-8 lg:px-8 lg:pb-2">
         <button onClick={() => navigate('/')} className="text-terracotta text-[15px] font-medium">←</button>
         <div>
           <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Commit the day</h1>
@@ -154,7 +155,7 @@ export default function EveningScreen() {
         </div>
       </div>
 
-      <div className="px-4 pb-24 space-y-6">
+      <div className="px-4 pb-24 space-y-6 lg:px-8 lg:pb-8">
         <p className="text-[15px] text-muted dark:text-muted-dark">How was the day, overall?</p>
 
         <MetricCircles label="Spark" value={spark} onChange={setSpark} color={METRIC_COLORS.spark} />
@@ -270,6 +271,7 @@ export default function EveningScreen() {
         >
           {saving ? 'Committing...' : 'Commit ✦'}
         </button>
+      </div>
       </div>
     </div>
   )

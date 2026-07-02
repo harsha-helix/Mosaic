@@ -37,9 +37,9 @@ export default function SearchScreen() {
   const results = showRecent ? allMoments.slice(0, 5) : filtered
 
   return (
-    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-14 pb-24">
+    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-14 pb-24 lg:px-10 lg:pt-16 lg:max-w-[1200px] lg:mx-auto">
       {/* Search input */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 lg:mb-6">
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-hint dark:text-hint-dark">
           <SearchIcon size={17} color="currentColor" />
         </span>
@@ -59,8 +59,8 @@ export default function SearchScreen() {
         )}
       </div>
 
-      {/* Type filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-5 no-scrollbar">
+      {/* Type filter chips (mobile: horizontal scroll) */}
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-5 no-scrollbar lg:hidden">
         <button
           onClick={() => setTypeFilter(null)}
           className="flex-shrink-0 px-4 py-1.5 rounded-pill text-[13px] font-medium border-2 transition-colors"
@@ -88,29 +88,63 @@ export default function SearchScreen() {
         })}
       </div>
 
-      {/* Results */}
-      {showRecent && allMoments.length > 0 && (
-        <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Recent</p>
-      )}
-
-      {results.length === 0 && !showRecent && (
-        <div className="flex flex-col items-center py-20 text-center">
-          <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
-          <p className="text-[15px] text-muted dark:text-muted-dark">Nothing found — try different words</p>
+      <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-8 lg:items-start">
+        {/* Type filter (desktop: persistent left column) */}
+        <div className="hidden lg:block lg:sticky lg:top-8">
+          <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Filter</p>
+          <div className="space-y-0.5">
+            <button
+              onClick={() => setTypeFilter(null)}
+              className="w-full text-left px-3 py-2 rounded-btn-sm text-[14px] font-medium transition-colors"
+              style={{
+                color: !typeFilter ? 'var(--color-terracotta)' : 'var(--color-muted)',
+                backgroundColor: !typeFilter ? 'color-mix(in srgb, var(--color-terracotta) 8%, transparent)' : 'transparent',
+              }}
+            >All</button>
+            {ALL_TYPES.map(type => {
+              const color = MOMENT_COLORS[type]
+              const active = typeFilter === type
+              return (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(active ? null : type)}
+                  className="w-full text-left px-3 py-2 rounded-btn-sm text-[14px] font-medium capitalize transition-colors"
+                  style={{
+                    color: active ? color : 'var(--color-muted)',
+                    backgroundColor: active ? `color-mix(in srgb, ${color} 13%, transparent)` : 'transparent',
+                  }}
+                >{type}</button>
+              )
+            })}
+          </div>
         </div>
-      )}
 
-      {results.length === 0 && showRecent && (
-        <div className="flex flex-col items-center py-20 text-center">
-          <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
-          <p className="text-[15px] text-muted dark:text-muted-dark">Capture a moment to search it later</p>
+        <div>
+          {/* Results */}
+          {showRecent && allMoments.length > 0 && (
+            <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Recent</p>
+          )}
+
+          {results.length === 0 && !showRecent && (
+            <div className="flex flex-col items-center py-20 text-center">
+              <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
+              <p className="text-[15px] text-muted dark:text-muted-dark">Nothing found — try different words</p>
+            </div>
+          )}
+
+          {results.length === 0 && showRecent && (
+            <div className="flex flex-col items-center py-20 text-center">
+              <SearchIcon size={30} color="var(--color-hint)" className="mb-3" />
+              <p className="text-[15px] text-muted dark:text-muted-dark">Capture a moment to search it later</p>
+            </div>
+          )}
+
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+            {results.map((m, i) => (
+              <ResultCard key={i} moment={m} query={query} />
+            ))}
+          </div>
         </div>
-      )}
-
-      <div className="space-y-3">
-        {results.map((m, i) => (
-          <ResultCard key={i} moment={m} query={query} />
-        ))}
       </div>
     </div>
   )

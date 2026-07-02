@@ -112,12 +112,16 @@ export default function HighlightsScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-14 pb-24">
+    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-14 pb-24 lg:px-10 lg:pt-16 lg:max-w-[1120px] lg:mx-auto">
       <h1 className="font-display text-[24px] font-semibold text-ink dark:text-ink-dark mb-6">Highlights</h1>
 
-      <div className="space-y-6">
+      {/* 2-up masonry on desktop (docs/14 §6): CSS multi-column keeps the
+          natural, variable card heights instead of forcing a fixed-height
+          grid, and preserves the exact mobile DOM order below `lg` since
+          `columns` only takes effect inside the lg: media query. */}
+      <div className="space-y-6 lg:space-y-0 lg:columns-2 lg:gap-6">
         {dates.map(date => (
-          <div key={date} className="space-y-3">
+          <div key={date} className="space-y-3 lg:break-inside-avoid lg:mb-6">
             <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide">{formatDateLabel(date)}</p>
             {grouped[date].map((item, i) => (
               item.kind === 'moment' ? (

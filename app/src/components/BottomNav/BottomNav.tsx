@@ -21,7 +21,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-center justify-around h-16">

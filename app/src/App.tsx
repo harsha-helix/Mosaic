@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { BottomNav } from './components/BottomNav/BottomNav'
+import { SidebarNav } from './components/SidebarNav/SidebarNav'
 import { FAB } from './components/FAB/FAB'
 import { MomentCapture } from './components/MomentCapture/MomentCapture'
 import { useAuthStore } from './store/auth'
@@ -96,6 +97,13 @@ function AppShell() {
   const { setEntry, setMoments, setLoaded } = useTodayStore()
   const { setStatus, setSynced } = useSyncStore()
   const [showCapture, setShowCapture] = useState(false)
+  const location = useLocation()
+
+  // Matches SidebarNav/BottomNav's own hide rule (docs/14: full-attention
+  // flows hide chrome on both mobile and desktop) — used here just to drop
+  // the sidebar's content offset so Morning/Evening's centered card isn't
+  // pushed off-center by a gutter for a sidebar that isn't showing.
+  const hideChrome = ['/morning', '/evening', '/onboarding'].some(p => location.pathname.startsWith(p))
 
   useEffect(() => {
     setHydrated(true)
@@ -205,7 +213,9 @@ function AppShell() {
 
   return (
     <div className="relative min-h-screen bg-base dark:bg-base-dark">
-      <main className="pb-16">
+      <SidebarNav onCapture={() => setShowCapture(true)} />
+
+      <main className={`pb-16 lg:pb-0 ${hideChrome ? '' : 'lg:pl-60'}`}>
         <AnimatedRoutes />
       </main>
 

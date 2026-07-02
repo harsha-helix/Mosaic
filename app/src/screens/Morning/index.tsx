@@ -81,8 +81,9 @@ export default function MorningScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-base dark:bg-base-dark">
-      <div className="flex items-center gap-4 px-4 pt-14 pb-4">
+    <div className="min-h-screen bg-base dark:bg-base-dark lg:flex lg:items-center lg:justify-center lg:py-12 lg:px-6">
+      <div className="lg:w-full lg:max-w-[600px] lg:bg-surface lg:dark:bg-surface-dark lg:rounded-card lg:shadow-card lg:dark:shadow-card-dark lg:overflow-hidden">
+      <div className="flex items-center gap-4 px-4 pt-14 pb-4 lg:pt-8 lg:px-8 lg:pb-2">
         <button onClick={() => navigate('/')} className="text-terracotta text-[15px] font-medium">←</button>
         <div>
           <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Morning</h1>
@@ -90,7 +91,7 @@ export default function MorningScreen() {
         </div>
       </div>
 
-      <div className="px-4 pb-24 space-y-6">
+      <div className="px-4 pb-24 space-y-6 lg:px-8 lg:pb-8">
         {showSleep && (
           <div className="space-y-2">
             <p className="text-[13px] text-hint dark:text-hint-dark">Sleep from last night</p>
@@ -150,6 +151,7 @@ export default function MorningScreen() {
             {saving ? 'Saving…' : 'Save morning'}
           </button>
         )}
+      </div>
       </div>
     </div>
   )

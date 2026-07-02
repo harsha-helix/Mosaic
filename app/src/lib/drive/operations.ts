@@ -287,15 +287,29 @@ function mergeEntry(local: DailyEntry | undefined, remote: DailyEntry): DailyEnt
 }
 
 /**
+ * Bounded-concurrency batching for full-history pulls (docs/11 D6).
+ * 5 files at a time is fast without bursting the Drive API, and the yield
+ * between batches keeps a long sync from starving first paint / input
+ * handling on a mid-range phone.
+ */
+const PULL_BATCH_SIZE = 5
+
+async function inBatches<T>(items: T[], fn: (item: T) => Promise<void>): Promise<void> {
+  for (let i = 0; i < items.length; i += PULL_BATCH_SIZE) {
+    await Promise.all(items.slice(i, i + PULL_BATCH_SIZE).map(fn))
+    await new Promise(r => setTimeout(r, 0)) // yield to the event loop
+  }
+}
+
+/**
  * Pull all entries from Drive and merge into IndexedDB.
  * Returns count of entries that were updated or newly created.
  */
 export async function pullAllEntries(): Promise<number> {
   if (!ENTRIES_FOLDER_ID) return 0
-  const files = await listFolder(ENTRIES_FOLDER_ID)
+  const files = (await listFolder(ENTRIES_FOLDER_ID)).filter(f => f.name.endsWith('.json'))
   let count = 0
-  for (const file of files) {
-    if (!file.name.endsWith('.json')) continue
+  await inBatches(files, async (file) => {
     try {
       const date = file.name.replace('.json', '')
       const [local, remote] = await Promise.all([
@@ -310,7 +324,7 @@ export async function pullAllEntries(): Promise<number> {
     } catch {
       // Skip files that fail to download or parse
     }
-  }
+  })
   return count
 }
 
@@ -320,10 +334,9 @@ export async function pullAllEntries(): Promise<number> {
  */
 export async function pullAllMoments(): Promise<number> {
   if (!MOMENTS_FOLDER_ID) return 0
-  const files = await listFolder(MOMENTS_FOLDER_ID)
+  const files = (await listFolder(MOMENTS_FOLDER_ID)).filter(f => f.name.endsWith('.json'))
   let count = 0
-  for (const file of files) {
-    if (!file.name.endsWith('.json')) continue
+  await inBatches(files, async (file) => {
     try {
       const date = file.name.replace('.json', '')
       const [local, remote] = await Promise.all([
@@ -342,7 +355,7 @@ export async function pullAllMoments(): Promise<number> {
     } catch {
       // Skip files that fail to download or parse
     }
-  }
+  })
   return count
 }
 

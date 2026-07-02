@@ -92,10 +92,15 @@ export default function DayViewScreen() {
         </div>
       </div>
 
-      <div className="px-4 pb-24 space-y-2">
+      {/* 3-column at desktop (docs/14 §7: Morning | Moments | Evening, all
+          visible at once instead of a scroll-through stack). Each section
+          becomes one real div (not a Fragment) so it can be a single grid
+          item — DOM order is unchanged, so mobile still renders exactly
+          the same top-to-bottom stack as before. */}
+      <div className="px-4 pb-24 space-y-2 lg:space-y-0 lg:grid lg:grid-cols-[0.9fr_1.5fr_1.4fr] lg:gap-6 lg:items-start lg:max-w-[1200px] lg:mx-auto lg:px-10">
         {/* Morning */}
         {entry?.morning && (
-          <>
+          <div>
             <SectionLabel>Morning</SectionLabel>
             <div className="flex flex-wrap gap-2 mb-3">
               <MetricChip label="Mood"       value={entry.morning.mood}       color={METRIC_COLORS.mood} />
@@ -108,22 +113,24 @@ export default function DayViewScreen() {
               <ReflectionRow label="Priority"  value={entry.morning.priority} />
               <ReflectionRow label="Notice"    value={entry.morning.notice} />
             </div>
-          </>
-        )}
-
-        {/* Moments */}
-        <SectionLabel>Moments ({moments.length})</SectionLabel>
-        {moments.length === 0 ? (
-          <p className="text-[13px] text-hint dark:text-hint-dark text-center py-4">A quiet day. Nothing captured.</p>
-        ) : (
-          <div className="space-y-2">
-            {moments.map((m, i) => <MomentCard key={i} moment={m} variant="compact" dateFormat="time" />)}
           </div>
         )}
 
+        {/* Moments */}
+        <div>
+          <SectionLabel>Moments ({moments.length})</SectionLabel>
+          {moments.length === 0 ? (
+            <p className="text-[13px] text-hint dark:text-hint-dark text-center py-4">A quiet day. Nothing captured.</p>
+          ) : (
+            <div className="space-y-2">
+              {moments.map((m, i) => <MomentCard key={i} moment={m} variant="compact" dateFormat="time" />)}
+            </div>
+          )}
+        </div>
+
         {/* Evening */}
         {entry?.evening && (
-          <>
+          <div>
             <SectionLabel>Evening</SectionLabel>
             <div className="flex flex-wrap gap-2 mb-3">
               <MetricChip label="Spark" value={entry.evening.spark}            color={METRIC_COLORS.spark} />
@@ -149,7 +156,7 @@ export default function DayViewScreen() {
                 </p>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

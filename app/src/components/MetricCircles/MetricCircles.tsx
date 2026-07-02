@@ -13,7 +13,7 @@ export function MetricCircles({ value, onChange, color, label }: MetricCirclesPr
 
   return (
     <div className="space-y-2">
-      <p className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{label}</p>
+      <p className="text-[15px] font-medium text-ink dark:text-ink-dark">{label}</p>
       <div className="flex items-center gap-1.5">
         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
           const filled = value !== undefined && n <= value
@@ -25,16 +25,16 @@ export function MetricCircles({ value, onChange, color, label }: MetricCirclesPr
               className="w-7 h-7 rounded-full border-2 flex-shrink-0 transition-transform active:scale-90"
               style={{
                 backgroundColor: filled ? color : 'transparent',
-                borderColor: filled ? color : '#E8E8E8',
+                borderColor: filled ? color : '#E5D9C6',
               }}
             />
           )
         })}
       </div>
       <div className="flex justify-between px-0.5">
-        <span className="text-[11px] text-[#AAAAAA]">1</span>
-        <span className="text-[11px] text-[#AAAAAA]">5</span>
-        <span className="text-[11px] text-[#AAAAAA]">10</span>
+        <span className="text-[11px] text-hint dark:text-hint-dark">1</span>
+        <span className="text-[11px] text-hint dark:text-hint-dark">5</span>
+        <span className="text-[11px] text-hint dark:text-hint-dark">10</span>
       </div>
     </div>
   )

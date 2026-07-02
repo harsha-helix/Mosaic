@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { MomentType } from '../../types'
-import { MOMENT_COLORS, MOMENT_EMOJIS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId } from '../../types'
+import { MOMENT_COLORS, MOMENT_PLACEHOLDERS, REMEMBER_DEFAULTS, generateMomentId } from '../../types'
 import { RememberToggle } from '../RememberToggle/RememberToggle'
+import { MomentIcon } from '../icons/Icons'
+import { textOnAccent } from '../../lib/theme'
 import { appendMoment, enqueueSyncItem } from '../../lib/db/queries'
 import { pushMoments, pushMedia } from '../../lib/drive/operations'
 import { silentSignIn } from '../../lib/drive/client'
@@ -23,6 +26,27 @@ const TYPE_LABELS: Record<MomentType, string> = {
   place: 'Place', insight: 'Insight',
 }
 
+// Bottom sheet: spring up on open (~250ms), ease-in down on dismiss (~200ms)
+// (spec §Motion table: "Bottom sheet open" / "Bottom sheet dismiss")
+const SHEET_VARIANTS = {
+  hidden: { y: '100%' },
+  visible: { y: 0, transition: { type: 'spring' as const, stiffness: 340, damping: 32 } },
+  exit: { y: '100%', transition: { duration: 0.2, ease: 'easeIn' as const } },
+}
+
+const BACKDROP_VARIANTS = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
+}
+
+// Step 1 -> Step 2 content swap: slide up (spec: "Tap -> slide up to Step 2")
+const STEP_VARIANTS = {
+  initial: { y: 16, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { duration: 0.18, ease: 'easeOut' as const } },
+  exit: { y: -16, opacity: 0, transition: { duration: 0.12, ease: 'easeIn' as const } },
+}
+
 interface MomentCaptureProps {
   onClose: () => void
 }
@@ -39,6 +63,12 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Set right before closing — renders a tiny tile that shares a layoutId with
+  // the tile Home's Today mosaic strip renders for the same moment, so
+  // Framer Motion animates one flying into the other (spec §4: "Instant
+  // visual — Mosaic tile"). Only visible for the brief window between save
+  // and the sheet closing.
+  const [flyingTile, setFlyingTile] = useState<{ id: string; color: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const { addMoment } = useTodayStore()
 
@@ -65,6 +95,7 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
 
     const date = todayDate()
     const id = generateMomentId()
+    const color = MOMENT_COLORS[type]
 
     const moment = {
       id,
@@ -90,97 +121,123 @@ export function MomentCapture({ onClose }: MomentCaptureProps) {
         .catch(() => enqueueSyncItem('media', 'media/' + id + '.' + ext, photo!))
     }
 
-    onClose()
+    // Give the tile-drop shared-layout animation a moment to register
+    // against Home's Today strip (if Home is mounted underneath) before the
+    // sheet's own exit animation starts — total added delay is small enough
+    // to stay well under the spec's <10s capture target.
+    setFlyingTile({ id, color })
+    setTimeout(onClose, 90)
   }
 
-  const color = type ? MOMENT_COLORS[type] : '#7C4DFF'
+  const color = type ? MOMENT_COLORS[type] : '#C1633D'
 
-  // Step 1: Type Picker
-  if (step === 'picker') {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col justify-end">
-        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-        <div className="relative bg-white dark:bg-[#1E1E1E] rounded-t-[24px] pb-8 pt-3 px-4 max-h-[90vh] overflow-y-auto">
-          <div className="w-10 h-1 bg-[#E8E8E8] dark:bg-[#2E2E2E] rounded-full mx-auto mb-5" />
-          <h2 className="font-display text-[20px] font-semibold text-[#111111] dark:text-[#F0F0F0] mb-5">
-            What's happening?
-          </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {MOMENT_TYPES.map(t => {
-              const c = MOMENT_COLORS[t]
-              return (
-                <button
-                  key={t}
-                  onClick={() => selectType(t)}
-                  className="flex flex-col items-center gap-2 p-4 rounded-[16px] active:scale-95 transition-transform"
-                  style={{ backgroundColor: `${c}1A` }}
-                >
-                  <span className="text-2xl">{MOMENT_EMOJIS[t]}</span>
-                  <span className="text-[12px] font-medium" style={{ color: c }}>
-                    {TYPE_LABELS[t]}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Step 2: Capture
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white dark:bg-[#1E1E1E] rounded-t-[24px] pb-8 pt-3 px-4">
-        <div className="w-10 h-1 bg-[#E8E8E8] dark:bg-[#2E2E2E] rounded-full mx-auto mb-4" />
+    <motion.div
+      className="fixed inset-0 z-50 flex flex-col justify-end"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
+      <motion.div
+        className="absolute inset-0 bg-black/40"
+        variants={BACKDROP_VARIANTS}
+        onClick={onClose}
+      />
 
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => setStep('picker')} className="text-[#7C4DFF] text-[15px] font-medium">←</button>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${color}1A` }}>
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-[13px] font-medium" style={{ color }}>{type && TYPE_LABELS[type]}</span>
-          </div>
-        </div>
-
-        <textarea
-          autoFocus
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder={type ? MOMENT_PLACEHOLDERS[type] : ''}
-          rows={4}
-          className="w-full px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-[#FAFAF8] dark:bg-[#141414] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF] resize-none transition-colors mb-3"
+      {flyingTile && (
+        <motion.div
+          layoutId={`mosaic-tile-${flyingTile.id}`}
+          className="absolute bottom-24 right-8 w-4 h-4 rounded-[4px] pointer-events-none"
+          style={{ backgroundColor: flyingTile.color }}
         />
+      )}
 
-        {photoPreview && (
-          <div className="mb-3 relative">
-            <img src={photoPreview} alt="preview" className="w-full max-h-48 object-cover rounded-[12px]" />
-            <button
-              onClick={() => { setPhoto(null); setPhotoPreview(null) }}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-            >×</button>
-          </div>
-        )}
+      <motion.div
+        className="relative bg-surface dark:bg-surface-dark rounded-t-sheet pb-8 pt-3 px-4 max-h-[90vh] overflow-y-auto"
+        variants={SHEET_VARIANTS}
+      >
+        <div className="w-10 h-1 bg-hairline dark:bg-hairline-dark rounded-full mx-auto mb-4" />
 
-        <button onClick={() => fileRef.current?.click()} className="text-[13px] text-[#666666] dark:text-[#999999] mb-3 flex items-center gap-1">
-          📷 Add photo
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+        <AnimatePresence mode="wait" initial={false}>
+          {step === 'picker' ? (
+            <motion.div key="picker" variants={STEP_VARIANTS} initial="initial" animate="animate" exit="exit">
+              <h2 className="font-display text-[20px] font-semibold text-ink dark:text-ink-dark mb-5">
+                What's happening?
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                {MOMENT_TYPES.map(t => {
+                  const c = MOMENT_COLORS[t]
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => selectType(t)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-card active:scale-95 transition-transform"
+                      style={{ backgroundColor: `${c}1A` }}
+                    >
+                      <MomentIcon type={t} size={24} color={c} />
+                      <span className="text-[12px] font-medium" style={{ color: c }}>
+                        {TYPE_LABELS[t]}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="capture" variants={STEP_VARIANTS} initial="initial" animate="animate" exit="exit">
+              <div className="flex items-center gap-3 mb-5">
+                <button onClick={() => setStep('picker')} className="text-terracotta text-[15px] font-medium">←</button>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${color}1A` }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="text-[13px] font-medium" style={{ color }}>{type && TYPE_LABELS[type]}</span>
+                </div>
+              </div>
 
-        <hr className="border-[#E8E8E8] dark:border-[#2E2E2E] mb-3" />
+              <textarea
+                autoFocus
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder={type ? MOMENT_PLACEHOLDERS[type] : ''}
+                rows={4}
+                className="w-full px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta resize-none transition-colors mb-3"
+              />
 
-        <div className="flex items-center justify-between">
-          <RememberToggle value={remember} onChange={setRemember} />
-          <button
-            onClick={handleSave}
-            disabled={saving || (!text.trim() && !photo)}
-            className="px-8 py-3 rounded-[999px] text-white font-display font-semibold text-[15px] disabled:opacity-40 active:scale-[0.98] transition-all"
-            style={{ backgroundColor: color }}
-          >
-            {saving ? '…' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
+              {photoPreview && (
+                <div className="mb-3 relative">
+                  <img src={photoPreview} alt="preview" className="w-full max-h-48 object-cover rounded-input" />
+                  <button
+                    onClick={() => { setPhoto(null); setPhotoPreview(null) }}
+                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                  >×</button>
+                </div>
+              )}
+
+              <button onClick={() => fileRef.current?.click()} className="text-[13px] text-muted dark:text-muted-dark mb-3 flex items-center gap-1.5">
+                <MomentIcon type="photo" size={15} color="currentColor" /> Add photo
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+
+              <hr className="border-hairline dark:border-hairline-dark mb-3" />
+
+              <div className="flex items-center justify-between">
+                <RememberToggle value={remember} onChange={setRemember} />
+                <button
+                  onClick={handleSave}
+                  disabled={saving || (!text.trim() && !photo)}
+                  className="px-8 py-3 rounded-btn font-display font-semibold text-[15px] disabled:opacity-40 active:scale-[0.98] transition-all"
+                  style={{
+                    backgroundColor: color,
+                    color: textOnAccent(color),
+                    boxShadow: 'inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)',
+                  }}
+                >
+                  {saving ? '…' : 'Save'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   )
 }

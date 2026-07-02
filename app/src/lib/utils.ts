@@ -44,13 +44,13 @@ export function momentMatchesQuery(moment: Moment, query: string): boolean {
   return (moment.text?.toLowerCase().includes(q) ?? false)
 }
 
-/** Highlight matched substring in Violet */
+/** Highlight matched substring in terracotta (brand accent) */
 export function highlight(text: string, query: string): string {
   if (!query.trim()) return text
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return text.replace(
     new RegExp('(' + escaped + ')', 'gi'),
-    '<mark style="background:#7C4DFF22;color:#7C4DFF;border-radius:3px;padding:0 2px">$1</mark>'
+    '<mark style="background:#C1633D22;color:#C1633D;border-radius:3px;padding:0 2px">$1</mark>'
   )
 }
 

@@ -1,3 +1,5 @@
+import { CLUSTER } from '../lib/theme'
+
 export type MomentType =
   | 'photo'
   | 'beautiful'
@@ -23,38 +25,28 @@ export interface Moment {
   remember?: boolean   // omitted when false
 }
 
+// 5 accent clusters, grouped by feeling rather than one hue per type
+// (see docs/07_UI_Specification.md > Accent clusters).
 export const MOMENT_COLORS: Record<MomentType, string> = {
-  photo:        '#4D96FF',
-  beautiful:    '#FFD93D',
-  idea:         '#FF6B6B',
-  gratitude:    '#6BCB77',
-  anxiety:      '#A855F7',
-  conversation: '#F97316',
-  reading:      '#06B6D4',
-  music:        '#EC4899',
-  quote:        '#84CC16',
-  workout:      '#EF4444',
-  coffee:       '#6366F1',
-  nicotine:     '#F59E0B',
-  place:        '#10B981',
-  insight:      '#F59E0B',
-}
-
-export const MOMENT_EMOJIS: Record<MomentType, string> = {
-  photo:        '📷',
-  beautiful:    '🌸',
-  idea:         '💡',
-  gratitude:    '🙏',
-  anxiety:      '😟',
-  conversation: '❤️',
-  reading:      '📚',
-  music:        '🎵',
-  quote:        '📖',
-  workout:      '🏃',
-  coffee:       '☕',
-  nicotine:     '🚬',
-  place:        '🌍',
-  insight:      '✨',
+  // Reflective — dusty teal
+  reading:      CLUSTER.reflective,
+  music:        CLUSTER.reflective,
+  quote:        CLUSTER.reflective,
+  insight:      CLUSTER.reflective,
+  // Warmth — honey gold
+  beautiful:    CLUSTER.warmth,
+  gratitude:    CLUSTER.warmth,
+  place:        CLUSTER.warmth,
+  // Creative spark — terracotta
+  idea:         CLUSTER.creative,
+  photo:        CLUSTER.creative,
+  conversation: CLUSTER.creative,
+  // Body / routine — sage
+  workout:      CLUSTER.body,
+  coffee:       CLUSTER.body,
+  nicotine:     CLUSTER.body,
+  // Anxiety — muted mauve (kept alone)
+  anxiety:      CLUSTER.anxiety,
 }
 
 export const MOMENT_PLACEHOLDERS: Record<MomentType, string> = {

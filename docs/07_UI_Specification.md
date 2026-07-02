@@ -2,7 +2,9 @@
 # 07 — UI Specification
 
 > Screen-by-screen visual and interaction specification for Mosaic MVP.
-> Aesthetic direction: **lively, vibrant, fun, goofy**. Not a productivity app. Not a wellness tracker. A personal repository that feels alive.
+> Aesthetic direction: **warm & tactile**. Not a productivity app. Not a wellness tracker. A personal repository that feels like a well-worn paper notebook, not a candy dispenser.
+
+> **Revision note (2026-07-01):** the original direction was "lively, vibrant, fun, goofy" with a 14-color neon palette and emoji icons (see git history for the prior version of this section). After living with the built app, that direction read as chaotic rather than alive. This revision replaces the design tokens below — typography, color, radius, shadow, icon system — with a warm/tactile direction: cream paper surfaces, a serif for personality, a tightened 5-accent palette, bespoke flat icons instead of emoji, and softer tactile buttons. Screen-by-screen wireframes further down in this doc still describe *layout and content*, which hasn't changed — read their color/icon call-outs against the new tokens below, not literally. Wireframes will be refreshed screen-by-screen as each is prototyped.
 
 ---
 
@@ -12,79 +14,61 @@
 
 | Role | Font | Weight | Size |
 |---|---|---|---|
-| Display (day title, big numbers) | Space Grotesk | 700 | 32–48px |
-| Heading | Space Grotesk | 600 | 20–24px |
-| Subheading | Space Grotesk | 500 | 16–18px |
-| Body | Inter | 400 | 15px |
-| Caption / label | Inter | 400 | 12–13px |
+| Display (day title, quote card, big numbers) | Fraunces | 600 | 28–44px |
+| Heading | Fraunces | 600 | 20–24px |
+| Subheading | Karla | 500 | 16–18px |
+| Body | Karla | 400 | 15px |
+| Caption / label | Karla | 400 | 12–13px |
 | Commit message | `monospace` (system) | 400 | 13px |
 
-Both fonts: Google Fonts (free). Import via `@fontsource`.
+Fraunces carries the personality (headings, day titles, the quote card, moment/commit copy that should feel written rather than typed). Karla stays the workhorse UI font — form labels, buttons, body text. Both fonts: Google Fonts (free). Import via `@fontsource`. Replaces the previous Space Grotesk + Inter pairing.
 
 ### Color Palette
 
-#### Hero colors (both modes)
+#### Base — cream / parchment
+
+Warmth lives in the whole canvas now, not just the accents. Light mode is a paper cream, not a stark off-white; dark mode is a warm espresso brown, not near-black.
+
+| Token | Light | Dark | Used for |
+|---|---|---|---|
+| `bg-base` | `#FAF3E7` | `#1E1812` | Page background |
+| `bg-surface` | `#FFFBF3` | `#2A231C` | Cards, sheets |
+| `bg-elevated` | `#F4EAD9` | `#332B21` | Raised/hover surfaces |
+| `text-primary` | `#2B2420` | `#F3EAD9` | Primary text |
+| `text-secondary` | `#6B5F52` | `#B3A390` | Supporting text |
+| `text-tertiary` | `#9A8E7E` | `#7A6D5C` | Hints, placeholders, inactive nav |
+| `border` | `#E5D9C6` | `#3A2F24` | Hairlines, dividers |
+
+#### Brand accent
 
 | Name | Hex | Used for |
 |---|---|---|
-| Violet | `#7C4DFF` | Primary brand, FAB, active nav |
-| Coral | `#FF6B6B` | Spark, high-energy states |
-| Yellow | `#FFD93D` | Beautiful things, joy |
-| Green | `#6BCB77` | Gratitude, positive |
-| Blue | `#4D96FF` | Photos, explore |
-| Pink | `#EC4899` | Music |
-| Orange | `#F97316` | Conversations |
-| Cyan | `#06B6D4` | Reading |
-| Lime | `#84CC16` | Quotes |
-| Red | `#EF4444` | Workout |
-| Amber | `#F59E0B` | Insight, Nicotine |
-| Indigo | `#6366F1` | Coffee |
-| Emerald | `#10B981` | Place |
-| Purple | `#A855F7` | Anxiety |
+| Terracotta | `#C1633D` | Primary brand — FAB, active nav, primary buttons (Save, Commit), Spark metric. Doubles as the Creative spark cluster color below, same pattern as violet doing double duty in the old palette. |
 
-#### Neutrals
+#### Accent clusters (replaces the 14-color moment-type map)
 
-| Token | Light | Dark |
-|---|---|---|
-| `bg-base` | `#FAFAF8` | `#141414` |
-| `bg-surface` | `#FFFFFF` | `#1E1E1E` |
-| `bg-elevated` | `#F4F4F2` | `#2A2A2A` |
-| `text-primary` | `#111111` | `#F0F0F0` |
-| `text-secondary` | `#666666` | `#999999` |
-| `text-tertiary` | `#AAAAAA` | `#555555` |
-| `border` | `#E8E8E8` | `#2E2E2E` |
+14 per-type colors read as a rainbow rather than a system. Instead, moment types are grouped into 5 clusters by feeling — fewer, more deliberate hues, each covering 1–4 related types.
 
-#### Moment type → color map
+| Cluster | Hex | Moment types | Also used for |
+|---|---|---|---|
+| Reflective | `#5B7B7A` (dusty teal) | reading, music, quote, insight | Excitement metric |
+| Warmth | `#C9A24B` (honey gold) | beautiful, gratitude, place | Mood metric |
+| Creative spark | `#C1633D` (terracotta) | idea, photo, conversation | Brand accent, Spark metric |
+| Body / routine | `#7A8B5C` (sage) | workout, coffee, nicotine | Energy metric |
+| Anxiety | `#8B6B7D` (muted mauve) | anxiety (kept alone — too emotionally distinct to blend into a cluster) | Anxiety metric |
 
-Each moment type renders with its own color. Consistent across the entire app.
-
-```
-photo        → Blue    #4D96FF
-beautiful    → Yellow  #FFD93D
-idea         → Coral   #FF6B6B
-gratitude    → Green   #6BCB77
-anxiety      → Purple  #A855F7
-conversation → Orange  #F97316
-reading      → Cyan    #06B6D4
-music        → Pink    #EC4899
-quote        → Lime    #84CC16
-workout      → Red     #EF4444
-coffee       → Indigo  #6366F1
-nicotine     → Amber   #F59E0B
-place        → Emerald #10B981
-insight      → Amber   #F59E0B
-```
+Anxiety the moment type and Anxiety the morning/evening metric intentionally share a hex — reinforces that they're the same signal shown two ways.
 
 ### Spacing
 
-Base unit: 4px. Use multiples: 4, 8, 12, 16, 20, 24, 32, 40, 48.
+Base unit: 4px. Use multiples: 4, 8, 12, 16, 20, 24, 32, 40, 48. (Unchanged.)
 
 ### Border Radius
 
 | Component | Radius |
 |---|---|
 | Card | 16px |
-| Button (primary) | 999px (pill) |
+| Button (primary) | 14px (rounded rect, not a pill — see Buttons below) |
 | Button (secondary) | 12px |
 | Input field | 12px |
 | Bottom sheet | 24px top corners |
@@ -92,14 +76,34 @@ Base unit: 4px. Use multiples: 4, 8, 12, 16, 20, 24, 32, 40, 48.
 | FAB | 50% |
 | Avatar / icon chip | 50% |
 
+### Buttons
+
+Moved off the flat pill shape — soft & tactile now: a rounded rect with a matte fill and a subtle inset shadow along the bottom edge, so it reads as pressable rather than a flat color block.
+
+```
+Primary:   background <accent>, radius 14px, text on-accent (see contrast rule below),
+           box-shadow: inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)
+           active state: shadow flattens (inset offset → -1px), scale 0.98
+Secondary: transparent fill, 1.5px border in text-secondary, radius 12px,
+           fills with bg-elevated on press
+```
+
+Text-on-accent: use the darkest reasonable shade of the accent's own family (matching each cluster's tint pairing), not pure white or pure black — keeps buttons feeling like part of the paper palette rather than a sticker on top of it.
+
 ### Elevation / Shadow
 
-Light mode: `0 2px 12px rgba(0,0,0,0.06)`
+Light mode: `0 2px 12px rgba(43,36,32,0.08)`
 Dark mode: `0 2px 12px rgba(0,0,0,0.4)`
 
-FAB: `0 4px 20px rgba(124,77,255,0.4)` (violet glow)
+FAB: `0 4px 20px rgba(193,99,61,0.35)` (terracotta glow, replaces the violet glow)
+
+### Icons
+
+Emoji (nav bar, moment type picker, type chips) are replaced by a bespoke flat-geometric icon set: solid single-color shapes, no outline, one icon per moment type plus the 5 nav icons. Each moment-type icon is colored by its accent cluster (see above), not individually per type — reinforces the cluster grouping visually, not just semantically. Nav icons use `text-tertiary` inactive / brand terracotta active, same pattern as today just without emoji.
 
 ### Motion
+
+Motion vocabulary is unchanged — bounce, wiggle, and the commit ceremony's confetti all stay, restyled onto the new palette rather than removed. The instinct going into this revision was that "warm & tactile" might mean quieter motion, but the decision was to keep the celebratory beats and just re-skin them: confetti particles should draw from the new accent-cluster hexes (teal / gold / terracotta / sage / mauve) instead of the old neon hero colors.
 
 | Interaction | Animation |
 |---|---|
@@ -109,7 +113,7 @@ FAB: `0 4px 20px rgba(124,77,255,0.4)` (violet glow)
 | Metric circle select | Scale bounce (150ms) |
 | Remember toggle | Wiggle + color pop (200ms) |
 | FAB tap | Scale down 0.9 → release (120ms) |
-| Evening commit | See commit ceremony below |
+| Evening commit | See commit ceremony below — confetti recolored to the new accent clusters |
 
 ---
 
@@ -134,11 +138,11 @@ Metric color assignments:
 
 | Metric | Color |
 |---|---|
-| Mood | Coral `#FF6B6B` |
-| Energy | Yellow `#FFD93D` |
-| Anxiety | Purple `#A855F7` |
-| Excitement | Green `#6BCB77` |
-| Spark | Violet `#7C4DFF` |
+| Mood | Warmth gold `#C9A24B` |
+| Energy | Sage `#7A8B5C` |
+| Anxiety | Mauve `#8B6B7D` |
+| Excitement | Reflective teal `#5B7B7A` |
+| Spark | Terracotta `#C1633D` (brand) |
 
 ### MomentCard
 
@@ -163,22 +167,24 @@ Metric color assignments:
 
 - Position: fixed, bottom-right, 24px from edge, 80px from bottom (above nav)
 - Size: 56px circle
-- Color: Violet `#7C4DFF`
-- Icon: `+` in white, 24px
-- Shadow: violet glow
+- Color: Terracotta `#C1633D` (brand)
+- Icon: `+` in on-accent color (dark terracotta text tone, not pure white — see Buttons), 24px
+- Shadow: terracotta glow
 - On tap: scale bounce + opens Moment Capture sheet
 
 ### BottomNav
 
 ```
 ┌──────────────────────────────────────┐
-│  🏠       ✨       📊       🔍    ⚙️  │
-│ Home  Highlights Insights Search Settings│
+│  [home] [highlights] [insights] [search] [settings]  │
+│  Home    Highlights   Insights  Search  Settings      │
 └──────────────────────────────────────┘
 ```
 
+Icons are the bespoke flat-geometric set (see Icons above), not emoji.
+
 - Height: 64px + safe area inset
-- Active tab: icon in Violet, label in Violet, bold
+- Active tab: icon in Terracotta, label in Terracotta, bold
 - Inactive: `text-tertiary`
 - Background: `bg-surface` with top border
 - FAB sits above, does not live in nav
@@ -186,7 +192,7 @@ Metric color assignments:
 ### RememberToggle
 
 - Off state: outlined star, `text-tertiary`
-- On state: filled star, `#FFD93D` (yellow), slight scale bounce on toggle
+- On state: filled star, `#C9A24B` (warmth gold, was yellow), slight scale bounce on toggle
 - Label: "Remember" in caption style
 - Used in Moment Capture and Evening Commit
 
@@ -226,7 +232,7 @@ Single scrollable page. Shown once.
 │  └──────┘                    │
 │                              │
 │  ┌────────────────────────┐  │
-│  │  Connect Google Drive  │  │  ← Violet pill button
+│  │  Connect Google Drive  │  │  ← Terracotta rounded-rect button
 │  └────────────────────────┘  │
 │                              │
 │  Your data lives in your     │
@@ -249,7 +255,7 @@ Single scrollable page. Shown once.
 │ ┌────────────────────────┐   │
 │ │                        │   │
 │ │  "The goal is not to   │   │  ← Quote card, bg-surface
-│ │  remember every day.   │   │     Space Grotesk, italic body
+│ │  remember every day.   │   │     Fraunces, italic body
 │ │  The goal is to notice │   │
 │ │  every day."           │   │
 │ │                        │   │
@@ -263,7 +269,7 @@ Single scrollable page. Shown once.
 │                              │
 │  ┌────────────────────────┐  │
 │  │ [photo or icon]        │  │  ← Last beautiful thing card
-│  │                        │  │     Yellow left border
+│  │                        │  │     Warmth gold left border
 │  │ saw the sun set behind │  │
 │  │ the water tank         │  │
 │  │                   Jun 28│ │
@@ -273,7 +279,7 @@ Single scrollable page. Shown once.
 │  ○ Morning · 3 moments · ○   │  ← status strip
 │                              │
 │ ┌──────────────────────────┐ │  ← conditional banner (if morning not done)
-│ │ Start your morning →     │ │     Violet background, white text
+│ │ Start your morning →     │ │     Terracotta background, white text
 │ └──────────────────────────┘ │
 │                              │
 └──────────────────────────────┘
@@ -290,6 +296,11 @@ Single scrollable page. Shown once.
 - Morning not done (any time before midnight): violet banner "Start your morning →"
 - Evening not done + time > 8pm: dark banner "Commit today before you sleep →"
 - Both banners are dismissable; they return next time the app is opened
+
+**Today status strip:**
+- `○ Morning` slot shows the Day Glyph (see Morning Check-in) once morning is saved, instead of a plain dot
+- Middle slot shows the mosaic tile row (see Moment Capture) instead of a "N moments" count — empty strip if nothing captured yet
+- `○ Evening` slot fills once Evening Commit is done
 
 ---
 
@@ -310,17 +321,17 @@ Full-screen flow. Not a bottom sheet — deserves full attention.
 │  ─────────────────────────   │
 │                              │
 │  Mood                        │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Coral)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Warmth gold)
 │  1           5          10   │
 │                              │
 │  Energy                      │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Yellow)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Sage)
 │                              │
 │  Anxiety                     │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Purple)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Mauve)
 │                              │
 │  Excitement                  │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Green)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Reflective teal)
 │                              │
 │  Today's intention           │
 │  ┌──────────────────────┐    │
@@ -338,7 +349,7 @@ Full-screen flow. Not a bottom sheet — deserves full attention.
 │  └──────────────────────┘    │
 │                              │
 │  ┌──────────────────────┐    │
-│  │      Save morning    │    │  ← Violet pill button
+│  │      Save morning    │    │  ← Terracotta rounded-rect button
 │  └──────────────────────┘    │
 │                              │
 └──────────────────────────────┘
@@ -347,6 +358,28 @@ Full-screen flow. Not a bottom sheet — deserves full attention.
 - All fields optional; "Save morning" always active
 - Keyboard: "next" moves between text fields
 - Back arrow → Home (no confirmation needed; partially filled state is saved as draft)
+
+**Instant visual — Day Glyph**
+
+On tap "Save morning," before transitioning to Home, a small radial glyph renders in place of the button:
+
+```
+        Mood
+         ●
+  Excite ╱ ╲ Energy
+        ╱   ╲
+       ●─────●
+        ╲   ╱
+         ╲ ╱
+          ●
+       Anxiety
+```
+
+- 4-axis shape (diamond/radar), one axis per morning metric: Mood (Warmth gold), Energy (Sage), Anxiety (Mauve), Excitement (Reflective teal)
+- Axis length = value / 10; unfilled metrics collapse that axis to center (glyph adapts to partial input)
+- Pop-in animation (200ms, scale bounce), holds ~600ms, then shrinks into the Today status strip on Home as a small persistent icon
+- If no metrics were filled, the glyph is skipped — button simply confirms and navigates
+- The same glyph shape is reused wherever this day is referenced elsewhere in the app (Today status strip, Day View header, Highlights day-commit cards) — it becomes the day's visual signature, independent of whether Evening Commit happens
 
 ---
 
@@ -409,7 +442,7 @@ Two-step overlay from any screen.
 │  [★ Remember]  OFF → ON      │  ← RememberToggle
 │                              │
 │  ┌──────────────────────┐    │
-│  │        Save          │    │  ← type-colored pill button
+│  │        Save          │    │  ← type-colored rounded-rect button
 │  └──────────────────────┘    │
 └──────────────────────────────┘
 ```
@@ -437,6 +470,16 @@ Two-step overlay from any screen.
 - Save → sheet dismisses with a satisfying spring animation
 - Remember auto-on for `beautiful` and `photo`
 
+**Instant visual — Mosaic tile**
+
+On [Save], in parallel with the spring-dismiss (no added delay — must not compromise the <10s capture target):
+
+- A small square tile in the type's color animates from the Save button toward the bottom of the screen and lands in the **Today mosaic strip** on Home
+- The Today mosaic strip replaces the plain "3 moments" count in the status area: instead of a number, it renders the actual tiles (one per moment captured today, left to right, in capture order), each colored by type
+- Tile drop: ~150ms travel + 100ms settle bounce — total added time is not perceptible against the capture flow
+- Tile count is uncapped for MVP; strip wraps or scrolls horizontally past ~12 tiles
+- This is the seed of the lifetime mosaic grid (see Parking Lot: "Animated commit graph") — the Today strip is a one-day slice of what that fuller view will eventually show
+
 ---
 
 ### 5. Evening Commit
@@ -451,10 +494,10 @@ Full-screen flow. Should feel like a ritual.
 │  How was the day, overall?   │
 │                              │
 │  Spark                       │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Violet)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Terracotta)
 │                              │
 │  Mood                        │
-│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Coral)
+│  ○ ○ ○ ○ ○ ○ ○ ○ ○ ○        │  ← MetricCircles (Warmth gold)
 │                              │
 │  ─────────────────────────   │
 │                              │
@@ -517,7 +560,7 @@ Full-screen flow. Should feel like a ritual.
 │  [★ Remember this day]       │
 │                              │
 │  ┌──────────────────────┐    │
-│  │    Commit ✦          │    │  ← Violet pill, large
+│  │    Commit ✦          │    │  ← Terracotta rounded-rect button, large
 │  └──────────────────────┘    │
 └──────────────────────────────┘
 ```
@@ -638,7 +681,7 @@ If no commit message was written, step 2 shows a generic line:
 │  Insights                    │
 │                              │
 │  ┌────────────────────────┐  │
-│  │  🔥 12 day streak      │  │  ← summary card, Violet bg
+│  │  🔥 12 day streak      │  │  ← summary card, Terracotta bg
 │  │  18 days this month    │  │
 │  │                        │  │
 │  │  Avg this month        │  │
@@ -650,16 +693,16 @@ If no commit message was written, step 2 shows a generic line:
 │  [  7d  ] [ 30d ] [ 90d ]    │  ← segmented control
 │                              │
 │  Spark                       │
-│  [line chart, Violet]        │
+│  [line chart, Terracotta]        │
 │                              │
 │  Sleep                       │
-│  [line chart, Blue]          │
+│  [line chart, Reflective teal] │
 │                              │
 │  Mood & Energy               │
-│  [dual line, Coral + Yellow] │
+│  [dual line, Warmth gold + Sage] │
 │                              │
 │  Anxiety                     │
-│  [line chart, Purple]        │
+│  [line chart, Mauve]        │
 │                              │
 │  Moments per day             │
 │  [bar chart, multi-color]    │  ← each bar colored by most-used type
@@ -668,7 +711,7 @@ If no commit message was written, step 2 shows a generic line:
 ```
 
 - Charts: Recharts, styled to match token system
-- Summary card: Violet background, white text
+- Summary card: Terracotta background, white text
 - Empty state (< 3 days of data): "Come back after a few days — your patterns will show up here"
 - Streak resets to 0 if an evening commit is missed
 
@@ -699,7 +742,7 @@ If no commit message was written, step 2 shows a generic line:
 
 - Empty search state: recent moments (last 5), labeled "Recent"
 - No results: "Nothing found — try different words"
-- Results highlight matched text in Violet
+- Results highlight matched text in Terracotta
 
 ---
 

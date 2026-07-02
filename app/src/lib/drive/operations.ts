@@ -45,7 +45,10 @@ const ROOT_NAME = 'Mosaic'
  * the file index from IndexedDB + the Drive listing.
  * Safe to call on a new device — searches Drive for existing data first.
  */
-export async function bootstrapDrive(displayName: string): Promise<void> {
+export async function bootstrapDrive(
+  displayName: string,
+  notifications: { morning_time: string; evening_time: string } = { morning_time: '08:00', evening_time: '21:00' }
+): Promise<void> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
 
@@ -97,7 +100,7 @@ export async function bootstrapDrive(displayName: string): Promise<void> {
     const meta: Meta = {
       version: '1',
       display_name: displayName,
-      notifications: { morning_time: '08:00', evening_time: '21:00' },
+      notifications,
       created_at: new Date().toISOString(),
       last_synced_at: new Date().toISOString(),
     }

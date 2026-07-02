@@ -1,12 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom'
+import { HomeIcon, HighlightsIcon, InsightsIcon, SearchIcon, SettingsIcon } from '../icons/Icons'
 
 const NAV_ITEMS = [
-  { path: '/',           label: 'Home',       icon: '🏠' },
-  { path: '/highlights', label: 'Highlights', icon: '✨' },
-  { path: '/insights',   label: 'Insights',   icon: '📊' },
-  { path: '/search',     label: 'Search',     icon: '🔍' },
-  { path: '/settings',   label: 'Settings',   icon: '⚙️' },
+  { path: '/',           label: 'Home',       Icon: HomeIcon },
+  { path: '/highlights', label: 'Highlights', Icon: HighlightsIcon },
+  { path: '/insights',   label: 'Insights',   Icon: InsightsIcon },
+  { path: '/search',     label: 'Search',     Icon: SearchIcon },
+  { path: '/settings',   label: 'Settings',   Icon: SettingsIcon },
 ]
+
+const ACTIVE = '#C1633D'
+const INACTIVE = '#9A8E7E'
 
 export function BottomNav() {
   const location = useLocation()
@@ -17,11 +21,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E]"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-center justify-around h-16">
-        {NAV_ITEMS.map(({ path, label, icon }) => {
+        {NAV_ITEMS.map(({ path, label, Icon }) => {
           const isActive = path === '/'
             ? location.pathname === '/'
             : location.pathname.startsWith(path)
@@ -31,12 +35,12 @@ export function BottomNav() {
               to={path}
               className="flex flex-col items-center gap-0.5 px-3 py-1 min-w-0"
             >
-              <span className="text-xl leading-none">{icon}</span>
+              <Icon size={22} color={isActive ? ACTIVE : INACTIVE} />
               <span
-                className={`text-[11px] font-medium truncate transition-colors ${
+                className={`text-[11px] truncate transition-colors ${
                   isActive
-                    ? 'text-[#7C4DFF]'
-                    : 'text-[#AAAAAA] dark:text-[#555555]'
+                    ? 'text-terracotta font-semibold'
+                    : 'text-hint dark:text-hint-dark font-medium'
                 }`}
               >
                 {label}

@@ -4,13 +4,13 @@
 
 @layer base {
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Karla', sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-[#FAFAF8] dark:bg-[#141414] text-[#111111] dark:text-[#F0F0F0];
+    @apply bg-base dark:bg-base-dark text-ink dark:text-ink-dark;
     overscroll-behavior: none;
   }
 
@@ -21,7 +21,7 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Fraunces', serif;
   }
 }
 

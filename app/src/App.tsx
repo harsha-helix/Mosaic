@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { BottomNav } from './components/BottomNav/BottomNav'
 import { FAB } from './components/FAB/FAB'
@@ -41,6 +42,40 @@ function waitForGIS(): Promise<void> {
       if (window.google?.accounts?.oauth2) { clearInterval(interval); resolve() }
     }, 100)
   })
+}
+
+const PAGE_VARIANTS = {
+  initial: { y: 16, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+  exit: { opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } },
+}
+
+function AnimatedRoutes() {
+  const location = useLocation()
+  return (
+    <AnimatePresence mode="sync" initial={false}>
+      <motion.div
+        key={location.pathname}
+        variants={PAGE_VARIANTS}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+      >
+        <Routes location={location}>
+          <Route path="/"           element={<HomeScreen />} />
+          <Route path="/morning"    element={<MorningScreen />} />
+          <Route path="/evening"    element={<EveningScreen />} />
+          <Route path="/highlights" element={<HighlightsScreen />} />
+          <Route path="/day/:date"  element={<DayViewScreen />} />
+          <Route path="/insights"   element={<InsightsScreen />} />
+          <Route path="/search"     element={<SearchScreen />} />
+          <Route path="/settings"   element={<SettingsScreen />} />
+          <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="*"           element={<Navigate to="/" replace />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  )
 }
 
 async function restoreFolderIds(): Promise<void> {
@@ -150,25 +185,16 @@ function AppShell() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
+    <div className="relative min-h-screen bg-base dark:bg-base-dark">
       <main className="pb-16">
-        <Routes>
-          <Route path="/"           element={<HomeScreen />} />
-          <Route path="/morning"    element={<MorningScreen />} />
-          <Route path="/evening"    element={<EveningScreen />} />
-          <Route path="/highlights" element={<HighlightsScreen />} />
-          <Route path="/day/:date"  element={<DayViewScreen />} />
-          <Route path="/insights"   element={<InsightsScreen />} />
-          <Route path="/search"     element={<SearchScreen />} />
-          <Route path="/settings"   element={<SettingsScreen />} />
-          <Route path="/onboarding" element={<Navigate to="/" replace />} />
-          <Route path="*"           element={<Navigate to="/" replace />} />
-        </Routes>
+        <AnimatedRoutes />
       </main>
 
       <BottomNav />
       <FAB onClick={() => setShowCapture(true)} />
-      {showCapture && <MomentCapture onClose={() => setShowCapture(false)} />}
+      <AnimatePresence>
+        {showCapture && <MomentCapture onClose={() => setShowCapture(false)} />}
+      </AnimatePresence>
     </div>
   )
 }

@@ -39,7 +39,7 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#141414] flex flex-col items-center justify-center px-8">
+    <div className="fixed inset-0 z-50 bg-[#1E1812] flex flex-col items-center justify-center px-8">
       <div className="w-full max-w-sm space-y-2">
         {lines.map((line, i) => (
           <p key={i} className="font-mono text-[14px] text-green-400 leading-relaxed">{line}</p>
@@ -47,7 +47,7 @@ function CommitCeremony({ message, date, onDone }: { message: string; date: stri
       </div>
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {['#7C4DFF','#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#EC4899'].flatMap((c, i) =>
+          {['#C1633D','#C9A24B','#7A8B5C','#5B7B7A','#8B6B7D'].flatMap((c, i) =>
             Array.from({ length: 8 }, (_, j) => (
               <div
                 key={i + '-' + j}
@@ -142,36 +142,36 @@ export default function EveningScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
+    <div className="min-h-screen bg-base dark:bg-base-dark">
       <div className="flex items-center gap-4 px-4 pt-14 pb-4">
-        <button onClick={() => navigate('/')} className="text-[#7C4DFF] text-[15px] font-medium">back</button>
+        <button onClick={() => navigate('/')} className="text-terracotta text-[15px] font-medium">←</button>
         <div>
-          <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Commit the day</h1>
-          <p className="text-[13px] text-[#AAAAAA]">{todayLabel()}</p>
+          <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Commit the day</h1>
+          <p className="text-[13px] text-hint dark:text-hint-dark">{todayLabel()}</p>
         </div>
       </div>
 
       <div className="px-4 pb-24 space-y-6">
-        <p className="text-[15px] text-[#666666] dark:text-[#999999]">How was the day, overall?</p>
+        <p className="text-[15px] text-muted dark:text-muted-dark">How was the day, overall?</p>
 
         <MetricCircles label="Spark" value={spark} onChange={setSpark} color={METRIC_COLORS.spark} />
         <MetricCircles label="Mood"  value={mood}  onChange={setMood}  color={METRIC_COLORS.mood} />
 
-        <hr className="border-[#E8E8E8] dark:border-[#2E2E2E]" />
-        <p className="font-display text-[16px] font-semibold text-[#111111] dark:text-[#F0F0F0]">The numbers</p>
+        <hr className="border-hairline dark:border-hairline-dark" />
+        <p className="font-display text-[16px] font-semibold text-ink dark:text-ink-dark">The numbers</p>
 
         <div className="space-y-2">
-          <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">Exercise</label>
+          <label className="text-[15px] font-medium text-ink dark:text-ink-dark">Exercise</label>
           <div className="flex items-center gap-3">
             {([true, false] as const).map(v => (
               <button
                 key={String(v)}
                 onClick={() => setExerciseDone(v)}
-                className="px-5 py-2 rounded-[12px] text-[14px] font-medium border-2 transition-all"
+                className="px-5 py-2 rounded-input text-[14px] font-medium border-2 transition-all"
                 style={{
-                  borderColor: exerciseDone === v ? '#7C4DFF' : '#E8E8E8',
-                  backgroundColor: exerciseDone === v ? '#7C4DFF15' : 'transparent',
-                  color: exerciseDone === v ? '#7C4DFF' : '#666666',
+                  borderColor: exerciseDone === v ? '#C1633D' : '#E5D9C6',
+                  backgroundColor: exerciseDone === v ? '#C1633D15' : 'transparent',
+                  color: exerciseDone === v ? '#C1633D' : '#6B5F52',
                 }}
               >
                 {v ? 'Yes' : 'No'}
@@ -184,9 +184,9 @@ export default function EveningScreen() {
                   value={exerciseMins}
                   onChange={e => setExerciseMins(e.target.value)}
                   placeholder="0"
-                  className="w-16 px-3 py-2 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[14px] outline-none focus:border-[#7C4DFF] text-center"
+                  className="w-16 px-3 py-2 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta text-center"
                 />
-                <span className="text-[13px] text-[#666666]">mins</span>
+                <span className="text-[13px] text-muted dark:text-muted-dark">mins</span>
               </div>
             )}
           </div>
@@ -197,22 +197,22 @@ export default function EveningScreen() {
           { label: 'Deep Work', value: deepWorkHrs, set: setDeepWorkHrs, unit: 'hours'   },
         ].map(({ label, value, set, unit }) => (
           <div key={label} className="space-y-2">
-            <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{label}</label>
+            <label className="text-[15px] font-medium text-ink dark:text-ink-dark">{label}</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 value={value}
                 onChange={e => set(e.target.value)}
                 placeholder="0"
-                className="w-24 px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF]"
+                className="w-24 px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta"
               />
-              <span className="text-[13px] text-[#666666]">{unit}</span>
+              <span className="text-[13px] text-muted dark:text-muted-dark">{unit}</span>
             </div>
           </div>
         ))}
 
-        <hr className="border-[#E8E8E8] dark:border-[#2E2E2E]" />
-        <p className="font-display text-[16px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Reflect</p>
+        <hr className="border-hairline dark:border-hairline-dark" />
+        <p className="font-display text-[16px] font-semibold text-ink dark:text-ink-dark">Reflect</p>
 
         {[
           { label: 'Biggest win',         value: biggestWin,       set: setBiggestWin,       ph: 'What went well?' },
@@ -222,38 +222,38 @@ export default function EveningScreen() {
           { label: 'One sentence',        value: journal,          set: setJournal,          ph: 'The day in one sentence...' },
         ].map(({ label, value, set, ph }) => (
           <div key={label} className="space-y-2">
-            <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{label}</label>
+            <label className="text-[15px] font-medium text-ink dark:text-ink-dark">{label}</label>
             <textarea
               value={value}
               onChange={e => set(e.target.value)}
               placeholder={ph}
               rows={2}
-              className="w-full px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF] resize-none"
+              className="w-full px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta resize-none"
             />
           </div>
         ))}
 
-        <hr className="border-[#E8E8E8] dark:border-[#2E2E2E]" />
+        <hr className="border-hairline dark:border-hairline-dark" />
 
         <div className="space-y-2">
-          <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">Name this day</label>
+          <label className="text-[15px] font-medium text-ink dark:text-ink-dark">Name this day</label>
           <input
             type="text"
             value={dayTitle}
             onChange={e => setDayTitle(e.target.value)}
             placeholder="Day title"
-            className="w-full px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF]"
+            className="w-full px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">Commit message</label>
+          <label className="text-[15px] font-medium text-ink dark:text-ink-dark">Commit message</label>
           <input
             type="text"
             value={commitMsg}
             onChange={e => setCommitMsg(e.target.value)}
             placeholder="feat: ..."
-            className="w-full px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[13px] font-mono outline-none focus:border-[#7C4DFF]"
+            className="w-full px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[13px] font-mono outline-none focus:border-terracotta"
           />
         </div>
 
@@ -262,9 +262,10 @@ export default function EveningScreen() {
         <button
           onClick={handleCommit}
           disabled={saving}
-          className="w-full py-4 rounded-[999px] bg-[#7C4DFF] text-white font-display font-bold text-[18px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+          className="w-full py-4 rounded-btn bg-terracotta font-display font-bold text-[18px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+          style={{ color: '#3D1F12', boxShadow: 'inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)' }}
         >
-          {saving ? 'Committing...' : 'Commit'}
+          {saving ? 'Committing...' : 'Commit ✦'}
         </button>
       </div>
     </div>

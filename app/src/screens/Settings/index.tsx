@@ -2,17 +2,24 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { silentSignIn, signIn, getToken } from '../../lib/drive/client'
-import { fullSync, flushSyncQueue } from '../../lib/drive/operations'
+import { fullSync, flushSyncQueue, fetchMeta, pushMeta } from '../../lib/drive/operations'
 import { getPendingSyncItems } from '../../lib/db/queries'
 
 type SyncState = 'idle' | 'syncing' | 'done' | 'error'
+type ProfileState = 'idle' | 'saving' | 'done' | 'error'
 
 export default function SettingsScreen() {
   const navigate = useNavigate()
-  const { displayName, setSignedOut } = useAuthStore()
+  const { displayName, setSignedIn, setSignedOut } = useAuthStore()
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncResult, setSyncResult] = useState<string | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
+
+  const [name, setName] = useState(displayName)
+  const [morningTime, setMorningTime] = useState('08:00')
+  const [eveningTime, setEveningTime] = useState('21:00')
+  const [profileState, setProfileState] = useState<ProfileState>('idle')
+  const [profileMessage, setProfileMessage] = useState<string | null>(null)
 
   const refreshPendingCount = useCallback(async () => {
     const items = await getPendingSyncItems()
@@ -22,6 +29,45 @@ export default function SettingsScreen() {
   useEffect(() => {
     refreshPendingCount()
   }, [refreshPendingCount])
+
+  // Load current reminder times / name from meta.json (falls back to
+  // whatever's already in the auth store + onboarding defaults if meta
+  // isn't reachable — e.g. offline).
+  useEffect(() => {
+    fetchMeta().then(meta => {
+      if (!meta) return
+      setName(meta.display_name || displayName)
+      setMorningTime(meta.notifications?.morning_time ?? '08:00')
+      setEveningTime(meta.notifications?.evening_time ?? '21:00')
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleSaveProfile() {
+    setProfileState('saving')
+    setProfileMessage(null)
+    try {
+      await silentSignIn()
+      const existing = await fetchMeta()
+      const updated = {
+        version: existing?.version ?? '1',
+        display_name: name.trim() || displayName,
+        created_at: existing?.created_at ?? new Date().toISOString(),
+        notifications: { morning_time: morningTime, evening_time: eveningTime },
+        last_synced_at: existing?.last_synced_at ?? new Date().toISOString(),
+        ...(existing?.fcm_token ? { fcm_token: existing.fcm_token } : {}),
+      }
+      await pushMeta(updated)
+      if (updated.display_name !== displayName) setSignedIn(updated.display_name)
+      setProfileState('done')
+      setProfileMessage('Saved')
+      setTimeout(() => { setProfileState('idle'); setProfileMessage(null) }, 2500)
+    } catch (e) {
+      setProfileState('error')
+      setProfileMessage(e instanceof Error ? e.message : 'Could not save — check your connection')
+      setTimeout(() => { setProfileState('idle'); setProfileMessage(null) }, 4000)
+    }
+  }
 
   async function handleSync() {
     setSyncState('syncing')
@@ -83,45 +129,101 @@ export default function SettingsScreen() {
     : syncState === 'error'   ? 'Failed'
     : 'Sync with Drive'
 
-  const syncColor = syncState === 'done'  ? '#22C55E'
-    : syncState === 'error' ? '#EF4444'
-    : '#7C4DFF'
+  const syncColor = syncState === 'done'  ? '#7A8B5C'
+    : syncState === 'error' ? '#B33F3F'
+    : '#C1633D'
+  const syncTextColor = syncState === 'idle' || syncState === 'syncing' ? '#3D1F12' : '#FFFFFF'
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
+    <div className="min-h-screen bg-base dark:bg-base-dark">
       <div className="px-4 pt-14 pb-6">
-        <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Settings</h1>
+        <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Settings</h1>
       </div>
 
       <div className="px-4 space-y-4 pb-24">
         {/* Account */}
-        <div className="rounded-[16px] bg-white dark:bg-[#1E1E1E] border border-[#E8E8E8] dark:border-[#2E2E2E] p-4">
-          <p className="text-[11px] text-[#AAAAAA] uppercase tracking-wide mb-3">Account</p>
+        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">Account</p>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#7C4DFF20] flex items-center justify-center flex-shrink-0">
-              <span className="font-display font-bold text-[#7C4DFF] text-[17px]">
+            <div className="w-10 h-10 rounded-full bg-[#C1633D20] flex items-center justify-center flex-shrink-0">
+              <span className="font-display font-bold text-terracotta text-[17px]">
                 {displayName.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{displayName}</p>
-              <p className="text-[12px] text-[#AAAAAA]">Google Drive</p>
+              <p className="text-[15px] font-medium text-ink dark:text-ink-dark">{displayName}</p>
+              <p className="text-[12px] text-hint dark:text-hint-dark">Google Drive</p>
             </div>
           </div>
         </div>
 
+        {/* Profile & Reminders */}
+        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4 space-y-3">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide">Profile &amp; reminders</p>
+
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Your name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Your name"
+              className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex-1 space-y-1.5">
+              <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Morning reminder</label>
+              <input
+                type="time"
+                value={morningTime}
+                onChange={e => setMorningTime(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <label className="text-[13px] font-medium text-ink dark:text-ink-dark">Evening reminder</label>
+              <input
+                type="time"
+                value={eveningTime}
+                onChange={e => setEveningTime(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-input border border-hairline dark:border-hairline-dark bg-base dark:bg-base-dark text-ink dark:text-ink-dark text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveProfile}
+            disabled={profileState === 'saving'}
+            className="w-full py-2.5 rounded-btn-sm font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+            style={{
+              backgroundColor: profileState === 'done' ? '#7A8B5C' : profileState === 'error' ? '#B33F3F' : '#C1633D',
+              color: profileState === 'idle' || profileState === 'saving' ? '#3D1F12' : '#FFFFFF',
+            }}
+          >
+            {profileState === 'saving' ? 'Saving…' : profileState === 'done' ? '✓ Saved' : profileState === 'error' ? 'Failed' : 'Save'}
+          </button>
+          {profileMessage && profileState === 'error' && (
+            <p className="text-[12px] text-center" style={{ color: '#B33F3F' }}>{profileMessage}</p>
+          )}
+          <p className="text-[11px] text-hint dark:text-hint-dark leading-relaxed">
+            Reminder times are stored, but push notifications aren't built yet — this is groundwork for that.
+          </p>
+        </div>
+
         {/* Sync */}
-        <div className="rounded-[16px] bg-white dark:bg-[#1E1E1E] border border-[#E8E8E8] dark:border-[#2E2E2E] p-4 space-y-3">
-          <p className="text-[11px] text-[#AAAAAA] uppercase tracking-wide">Sync</p>
-          <p className="text-[13px] text-[#666666] dark:text-[#888888] leading-relaxed">
+        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4 space-y-3">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide">Sync</p>
+          <p className="text-[13px] text-muted dark:text-muted-dark leading-relaxed">
             Push your data to Google Drive and pull any changes from other devices.
           </p>
 
           <button
             onClick={handleSync}
             disabled={syncState === 'syncing'}
-            className="w-full py-3 rounded-[12px] text-white font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-all duration-300"
-            style={{ backgroundColor: syncColor }}
+            className="w-full py-3 rounded-btn-sm font-medium text-[14px] disabled:opacity-60 active:scale-[0.98] transition-all duration-300"
+            style={{ backgroundColor: syncColor, color: syncTextColor }}
           >
             <span
               className="inline-block transition-all duration-300"
@@ -133,8 +235,8 @@ export default function SettingsScreen() {
               {syncState === 'syncing' ? (
                 <span className="flex items-center justify-center gap-2">
                   <span
-                    className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
-                    style={{ animation: 'spin 0.8s linear infinite' }}
+                    className="inline-block w-4 h-4 border-2 rounded-full"
+                    style={{ borderColor: 'rgba(61,31,18,0.35)', borderTopColor: '#3D1F12', animation: 'spin 0.8s linear infinite' }}
                   />
                   Syncing…
                 </span>
@@ -145,14 +247,14 @@ export default function SettingsScreen() {
           {syncResult && (
             <p
               className="text-[13px] text-center transition-all duration-300"
-              style={{ color: syncState === 'error' ? '#EF4444' : '#666666' }}
+              style={{ color: syncState === 'error' ? '#B33F3F' : '#6B5F52' }}
             >
               {syncResult}
             </p>
           )}
 
           {pendingCount > 0 && (
-            <p className="text-[13px] text-center text-[#F59E0B]">
+            <p className="text-[13px] text-center" style={{ color: '#C9A24B' }}>
               {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting to sync
             </p>
           )}
@@ -160,26 +262,26 @@ export default function SettingsScreen() {
           <button
             onClick={handleReconnect}
             disabled={syncState === 'syncing'}
-            className="w-full py-2.5 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] text-[#7C4DFF] font-medium text-[13px] disabled:opacity-60 active:scale-[0.98] transition-transform"
+            className="w-full py-2.5 rounded-btn-sm border border-hairline dark:border-hairline-dark text-terracotta font-medium text-[13px] disabled:opacity-60 active:scale-[0.98] transition-transform"
           >
             Reconnect Google Drive
           </button>
-          <p className="text-[11px] text-[#AAAAAA] text-center leading-relaxed">
+          <p className="text-[11px] text-hint dark:text-hint-dark text-center leading-relaxed">
             If sync gets stuck on "Syncing…" with no result, background reconnect likely failed silently — this opens Google's sign-in directly.
           </p>
         </div>
 
         {/* About */}
-        <div className="rounded-[16px] bg-white dark:bg-[#1E1E1E] border border-[#E8E8E8] dark:border-[#2E2E2E] p-4">
-          <p className="text-[11px] text-[#AAAAAA] uppercase tracking-wide mb-3">About</p>
+        <div className="rounded-card bg-surface dark:bg-surface-dark border border-hairline dark:border-hairline-dark p-4">
+          <p className="text-[11px] text-hint dark:text-hint-dark uppercase tracking-wide mb-3">About</p>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <p className="text-[13px] text-[#666666] dark:text-[#888888]">Version</p>
-              <p className="text-[13px] text-[#111111] dark:text-[#F0F0F0] font-mono">1.0.0</p>
+              <p className="text-[13px] text-muted dark:text-muted-dark">Version</p>
+              <p className="text-[13px] text-ink dark:text-ink-dark font-mono">0.2.5</p>
             </div>
             <div className="flex justify-between items-center">
-              <p className="text-[13px] text-[#666666] dark:text-[#888888]">Storage</p>
-              <p className="text-[13px] text-[#111111] dark:text-[#F0F0F0]">Your Google Drive</p>
+              <p className="text-[13px] text-muted dark:text-muted-dark">Storage</p>
+              <p className="text-[13px] text-ink dark:text-ink-dark">Your Google Drive</p>
             </div>
           </div>
         </div>
@@ -187,12 +289,13 @@ export default function SettingsScreen() {
         {/* Sign out */}
         <button
           onClick={handleSignOut}
-          className="w-full py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] text-[#FF4444] font-medium text-[14px] active:scale-[0.98] transition-transform"
+          className="w-full py-3 rounded-btn-sm border border-hairline dark:border-hairline-dark font-medium text-[14px] active:scale-[0.98] transition-transform"
+          style={{ color: '#B33F3F' }}
         >
           Sign out
         </button>
 
-        <p className="text-center text-[11px] text-[#CCCCCC] dark:text-[#444444] pt-2">
+        <p className="text-center text-[11px] text-hint dark:text-hint-dark pt-2">
           Your data lives in your Google Drive. Mosaic never stores it elsewhere.
         </p>
       </div>

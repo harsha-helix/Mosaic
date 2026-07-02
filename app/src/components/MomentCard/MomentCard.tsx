@@ -1,9 +1,15 @@
 import type { Moment } from '../../types'
-import { MOMENT_COLORS, MOMENT_EMOJIS } from '../../types'
+import { MOMENT_COLORS } from '../../types'
+import { PhotoThumbnail } from '../PhotoThumbnail/PhotoThumbnail'
 
 interface MomentCardProps {
   moment: Moment
-  compact?: boolean
+  variant?: 'default' | 'compact'
+  /** Search passes pre-highlighted (query-matched) HTML instead of plain text */
+  highlightHtml?: string
+  /** 'time' (Day View — same-day context), 'date' (Search), 'datetime' (Highlights) */
+  dateFormat?: 'time' | 'date' | 'datetime'
+  onClick?: () => void
 }
 
 function formatTime(iso: string) {
@@ -14,55 +20,59 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-export function MomentCard({ moment, compact = false }: MomentCardProps) {
-  const color = MOMENT_COLORS[moment.type]
-  const emoji = MOMENT_EMOJIS[moment.type]
+export function MomentCard({ moment, variant = 'default', highlightHtml, dateFormat = 'datetime', onClick }: MomentCardProps) {
+  const color = MOMENT_COLORS[moment.type] ?? '#9A8E7E'
   const label = moment.type.charAt(0).toUpperCase() + moment.type.slice(1)
+  const compact = variant === 'compact'
 
-  if (compact) {
-    return (
-      <div
-        className="bg-white dark:bg-[#1E1E1E] rounded-[16px] p-3 flex gap-3"
-        style={{ borderLeft: `3px solid ${color}` }}
-      >
-        <span className="text-base leading-none mt-0.5">{emoji}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[12px] font-medium" style={{ color }}>{label}</span>
-            <span className="text-[11px] text-[#AAAAAA] shrink-0">{formatTime(moment.captured_at)}</span>
-          </div>
-          <p className="text-[13px] text-[#111111] dark:text-[#F0F0F0] mt-0.5 line-clamp-2">{moment.text}</p>
-        </div>
-        {moment.remember && <span className="text-[#FFD93D] text-sm self-start">★</span>}
-      </div>
-    )
-  }
+  const dateLabel =
+    dateFormat === 'time'     ? formatTime(moment.captured_at) :
+    dateFormat === 'date'     ? formatDate(moment.captured_at) :
+    `${formatDate(moment.captured_at)} · ${formatTime(moment.captured_at)}`
+
+  const Wrapper = onClick ? 'button' : 'div'
 
   return (
-    <div
-      className="bg-white dark:bg-[#1E1E1E] rounded-[16px] p-4"
+    <Wrapper
+      onClick={onClick}
+      className={
+        (onClick ? 'w-full text-left ' : '') +
+        'bg-surface dark:bg-surface-dark ' +
+        (compact ? 'rounded-btn-sm p-3' : 'rounded-card p-4')
+      }
       style={{
-        borderLeft: `3px solid ${color}`,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+        borderLeft: '3px solid ' + color,
+        boxShadow: '0 2px 12px rgba(43,36,32,0.08)',
       }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <span className="text-[13px] font-medium" style={{ color }}>{label}</span>
-          <span className="text-[12px] text-[#AAAAAA]">
-            {formatDate(moment.captured_at)} · {formatTime(moment.captured_at)}
+      <div className={'flex items-center justify-between ' + (compact ? 'mb-0.5' : 'mb-2')}>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+          <span className={compact ? 'text-[12px] font-medium' : 'text-[13px] font-medium'} style={{ color }}>{label}</span>
+          <span className={compact ? 'text-[11px] text-hint dark:text-hint-dark' : 'text-[12px] text-hint dark:text-hint-dark'}>
+            {dateFormat === 'date' ? '· ' : ''}{dateLabel}
           </span>
         </div>
-        {moment.remember && <span className="text-[#FFD93D]">★</span>}
+        {moment.remember && <span className="text-[#C9A24B] flex-shrink-0" style={{ fontSize: compact ? 14 : 16 }}>★</span>}
       </div>
 
-      {/* Text */}
-      <p className="text-[15px] text-[#111111] dark:text-[#F0F0F0] leading-relaxed">{moment.text}</p>
-    </div>
+      {highlightHtml ? (
+        <p
+          className={(compact ? 'text-[13px] ' : 'text-[14px] ') + 'text-muted dark:text-muted-dark leading-relaxed line-clamp-3'}
+          dangerouslySetInnerHTML={{ __html: highlightHtml }}
+        />
+      ) : moment.text ? (
+        <p className={(compact ? 'text-[13px] mt-1 line-clamp-2' : 'text-[14px] mt-1 line-clamp-3') + ' text-muted dark:text-muted-dark leading-relaxed'}>
+          {moment.text}
+        </p>
+      ) : null}
+
+      {moment.media_id && (
+        <PhotoThumbnail
+          mediaId={moment.media_id}
+          className={'w-full object-cover rounded-input mt-2 ' + (compact ? 'max-h-32' : 'max-h-48')}
+        />
+      )}
+    </Wrapper>
   )
 }

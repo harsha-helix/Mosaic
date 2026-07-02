@@ -1,8 +1,8 @@
 export default function InsightsScreen() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414] flex flex-col items-center justify-center text-[#AAAAAA]">
-      <p className="font-display text-2xl font-semibold text-[#111111] dark:text-[#F0F0F0]">Insights</p>
-      <p className="text-sm mt-1 dark:text-[#555555]">Coming soon</p>
+    <div className="min-h-screen bg-base dark:bg-base-dark flex flex-col items-center justify-center">
+      <p className="font-display text-2xl font-semibold text-ink dark:text-ink-dark">Insights</p>
+      <p className="text-sm mt-1 text-hint dark:text-hint-dark">Coming soon</p>
     </div>
   )
 }

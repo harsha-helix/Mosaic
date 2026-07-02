@@ -58,6 +58,18 @@ export async function getAllFileIds(): Promise<Record<string, string>> {
   return Object.fromEntries(all.map(r => [r.path, r.driveId]))
 }
 
+/**
+ * Resolve a moment's media_id to its Drive file ID.
+ * The file index key is `media/{id}.{ext}` — the extension isn't stored on
+ * the Moment itself, so we look up by prefix instead of exact path.
+ */
+export async function getMediaFileId(mediaId: string): Promise<string | undefined> {
+  const all = await getAllFileIds()
+  const prefix = 'media/' + mediaId + '.'
+  const key = Object.keys(all).find(k => k.startsWith(prefix))
+  return key ? all[key] : undefined
+}
+
 // ── Sync Queue ────────────────────────────────────────────────────────────────
 
 export async function enqueueSyncItem(

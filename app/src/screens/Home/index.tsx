@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useTodayStore } from '../../store/today'
 import { useAuthStore } from '../../store/auth'
 import { getAllEntries, getAllMoments } from '../../lib/db/queries'
 import { computeAverages, formatDateLabel } from '../../lib/utils'
 import type { Moment } from '../../types'
+import { METRIC_COLORS, MOMENT_COLORS } from '../../types'
+import { DayGlyph } from '../../components/DayGlyph/DayGlyph'
+import { PhotoThumbnail } from '../../components/PhotoThumbnail/PhotoThumbnail'
 
 const FALLBACK_QUOTES = [
   "The goal is not to remember every day. The goal is to notice every day.",
@@ -30,7 +34,7 @@ function AverageChip({ label, value, color }: { label: string; value: number | n
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[13px] font-medium" style={{ color }}>{label}</span>
-      <span className="text-[15px] font-bold text-[#111111] dark:text-[#F0F0F0]">{value}</span>
+      <span className="text-[15px] font-bold text-ink dark:text-ink-dark">{value}</span>
     </div>
   )
 }
@@ -68,19 +72,21 @@ export default function HomeScreen() {
 
   const hasAverages = averages && Object.values(averages).some(v => v !== null)
 
+  const morning = entry?.morning
+
   return (
-    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414] px-4 pt-12 pb-6 space-y-5">
+    <div className="min-h-screen bg-base dark:bg-base-dark px-4 pt-12 pb-6 space-y-5">
       {/* Greeting */}
       <div>
-        <h1 className="font-display text-[28px] font-bold text-[#111111] dark:text-[#F0F0F0] leading-tight">
+        <h1 className="font-display text-[28px] font-bold text-ink dark:text-ink-dark leading-tight">
           {greeting.text} {greeting.emoji}
         </h1>
-        <p className="text-[13px] text-[#AAAAAA] mt-1">{getTodayLabel()}</p>
+        <p className="text-[13px] text-hint dark:text-hint-dark mt-1">{getTodayLabel()}</p>
       </div>
 
       {/* Quote card */}
-      <div className="rounded-[16px] p-5 bg-white dark:bg-[#1E1E1E]" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-        <p className="font-display text-[15px] italic text-[#333333] dark:text-[#CCCCCC] leading-relaxed">
+      <div className="rounded-card p-5 bg-surface dark:bg-surface-dark" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+        <p className="font-display text-[15px] italic text-muted dark:text-muted-dark leading-relaxed">
           "{quote}"
         </p>
       </div>
@@ -88,16 +94,16 @@ export default function HomeScreen() {
       {/* 7-day averages */}
       {hasAverages && (
         <div>
-          <p className="text-[12px] font-medium text-[#AAAAAA] uppercase tracking-wide mb-2">Last 7 days</p>
-          <div className="rounded-[16px] p-4 bg-white dark:bg-[#1E1E1E] flex flex-wrap gap-x-5 gap-y-2" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-            <AverageChip label="Spark"   value={averages!.spark}   color="#7C4DFF" />
-            <AverageChip label="Mood"    value={averages!.mood}    color="#FF6B6B" />
-            <AverageChip label="Energy"  value={averages!.energy}  color="#FFD93D" />
-            <AverageChip label="Anxiety" value={averages!.anxiety} color="#A855F7" />
+          <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Last 7 days</p>
+          <div className="rounded-card p-4 bg-surface dark:bg-surface-dark flex flex-wrap gap-x-5 gap-y-2" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+            <AverageChip label="Spark"   value={averages!.spark}   color={METRIC_COLORS.spark} />
+            <AverageChip label="Mood"    value={averages!.mood}    color={METRIC_COLORS.mood} />
+            <AverageChip label="Energy"  value={averages!.energy}  color={METRIC_COLORS.energy} />
+            <AverageChip label="Anxiety" value={averages!.anxiety} color={METRIC_COLORS.anxiety} />
             {averages!.sleep !== null && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-medium text-[#4D96FF]">Sleep</span>
-                <span className="text-[15px] font-bold text-[#111111] dark:text-[#F0F0F0]">{averages!.sleep}h</span>
+                <span className="text-[13px] font-medium" style={{ color: '#5B7B7A' }}>Sleep</span>
+                <span className="text-[15px] font-bold text-ink dark:text-ink-dark">{averages!.sleep}h</span>
               </div>
             )}
           </div>
@@ -107,28 +113,54 @@ export default function HomeScreen() {
       {/* Last beautiful thing */}
       {lastBeautiful && (
         <div
-          className="rounded-[16px] p-4 bg-white dark:bg-[#1E1E1E] relative overflow-hidden"
-          style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)', borderLeft: '3px solid #FFD93D' }}
+          className="rounded-card p-4 bg-surface dark:bg-surface-dark relative overflow-hidden"
+          style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)', borderLeft: '3px solid #C9A24B' }}
         >
-          <p className="text-[12px] font-medium text-[#FFD93D] uppercase tracking-wide mb-1">Last beautiful thing</p>
-          <p className="text-[15px] text-[#111111] dark:text-[#F0F0F0] leading-relaxed line-clamp-2">{lastBeautiful.text}</p>
-          <p className="text-[12px] text-[#AAAAAA] mt-1">{formatDateLabel(lastBeautiful.captured_at.slice(0, 10))}</p>
+          <p className="text-[12px] font-medium uppercase tracking-wide mb-1" style={{ color: '#C9A24B' }}>Last beautiful thing</p>
+          {lastBeautiful.media_id && (
+            <PhotoThumbnail
+              mediaId={lastBeautiful.media_id}
+              className="w-full max-h-40 object-cover rounded-input mb-2"
+            />
+          )}
+          <p className="text-[15px] text-ink dark:text-ink-dark leading-relaxed line-clamp-2">{lastBeautiful.text}</p>
+          <p className="text-[12px] text-hint dark:text-hint-dark mt-1">{formatDateLabel(lastBeautiful.captured_at.slice(0, 10))}</p>
         </div>
       )}
 
       {/* Today status strip */}
       <div>
-        <p className="text-[12px] font-medium text-[#AAAAAA] uppercase tracking-wide mb-2">Today</p>
-        <div className="rounded-[16px] p-4 bg-white dark:bg-[#1E1E1E] flex items-center gap-3" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: morningDone ? '#7C4DFF' : '#E8E8E8' }} />
-          <span className="text-[14px] text-[#666666] dark:text-[#999999]">Morning</span>
-          <span className="text-[#E8E8E8] dark:text-[#2E2E2E]">&middot;</span>
-          <span className="text-[14px] font-medium text-[#111111] dark:text-[#F0F0F0]">
-            {momentCount} {momentCount === 1 ? 'moment' : 'moments'}
-          </span>
-          <span className="text-[#E8E8E8] dark:text-[#2E2E2E]">&middot;</span>
-          <span className="text-[14px] text-[#666666] dark:text-[#999999]">Evening</span>
-          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: eveningDone ? '#7C4DFF' : '#E8E8E8' }} />
+        <p className="text-[12px] font-medium text-hint dark:text-hint-dark uppercase tracking-wide mb-2">Today</p>
+        <div className="rounded-card p-4 bg-surface dark:bg-surface-dark flex items-center gap-3" style={{ boxShadow: '0 2px 12px rgba(43,36,32,0.08)' }}>
+          {morningDone && morning ? (
+            <DayGlyph mood={morning.mood} energy={morning.energy} anxiety={morning.anxiety} excitement={morning.excitement} size={22} />
+          ) : (
+            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: '#E5D9C6' }} />
+          )}
+          <span className="text-[14px] text-muted dark:text-muted-dark flex-shrink-0">Morning</span>
+          <span className="text-hairline dark:text-hairline-dark flex-shrink-0">&middot;</span>
+
+          {/* Today mosaic tile strip — one colored tile per moment captured
+              today, in capture order. Replaces the plain "N moments" count
+              (spec §4: "Instant visual — Mosaic tile"). Scrolls horizontally
+              past ~12 tiles; empty when nothing's been captured yet. */}
+          <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar py-1" aria-label={`${momentCount} ${momentCount === 1 ? 'moment' : 'moments'} today`}>
+            {moments.map(m => (
+              <motion.div
+                key={m.id}
+                layoutId={`mosaic-tile-${m.id}`}
+                className="w-4 h-4 rounded-[4px] flex-shrink-0"
+                style={{ backgroundColor: MOMENT_COLORS[m.type] }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+              />
+            ))}
+          </div>
+
+          <span className="text-hairline dark:text-hairline-dark flex-shrink-0">&middot;</span>
+          <span className="text-[14px] text-muted dark:text-muted-dark flex-shrink-0">Evening</span>
+          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: eveningDone ? '#C1633D' : '#E5D9C6' }} />
         </div>
       </div>
 
@@ -136,15 +168,16 @@ export default function HomeScreen() {
       {showMorningBanner && (
         <button
           onClick={() => navigate('/morning')}
-          className="w-full rounded-[16px] p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
-          style={{ backgroundColor: '#7C4DFF' }}
+          className="w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform"
+          style={{ backgroundColor: '#C1633D' }}
         >
-          <span className="font-display font-semibold text-white text-[15px]">Start your morning</span>
+          <span className="font-display font-semibold text-[15px]" style={{ color: '#3D1F12' }}>Start your morning</span>
           <div className="flex items-center gap-2">
-            <span className="text-white text-lg">&rarr;</span>
+            <span className="text-lg" style={{ color: '#3D1F12' }}>&rarr;</span>
             <button
               onClick={e => { e.stopPropagation(); setMorningDismissed(true) }}
-              className="text-white/60 text-xl leading-none ml-2 p-1"
+              className="text-xl leading-none ml-2 p-1"
+              style={{ color: 'rgba(61,31,18,0.6)' }}
               aria-label="Dismiss"
             >&times;</button>
           </div>
@@ -155,14 +188,14 @@ export default function HomeScreen() {
       {showEveningBanner && (
         <button
           onClick={() => navigate('/evening')}
-          className="w-full rounded-[16px] p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform bg-[#1E1E1E] dark:bg-[#2A2A2A]"
+          className="w-full rounded-card p-4 text-left flex items-center justify-between active:scale-[0.98] transition-transform bg-ink dark:bg-elevated-dark"
         >
-          <span className="font-display font-semibold text-white text-[15px]">Commit today before you sleep</span>
+          <span className="font-display font-semibold text-ink-dark text-[15px]">Commit today before you sleep</span>
           <div className="flex items-center gap-2">
-            <span className="text-white text-lg">&rarr;</span>
+            <span className="text-ink-dark text-lg">&rarr;</span>
             <button
               onClick={e => { e.stopPropagation(); setEveningDismissed(true) }}
-              className="text-white/60 text-xl leading-none ml-2 p-1"
+              className="text-xl leading-none ml-2 p-1 opacity-60 text-ink-dark"
               aria-label="Dismiss"
             >&times;</button>
           </div>

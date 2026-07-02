@@ -38,10 +38,12 @@ export interface DailyEntry {
   evening?: EveningEntry
 }
 
+import { CLUSTER } from '../lib/theme'
+
 export const METRIC_COLORS: Record<string, string> = {
-  mood:       '#FF6B6B',
-  energy:     '#FFD93D',
-  anxiety:    '#A855F7',
-  excitement: '#6BCB77',
-  spark:      '#7C4DFF',
+  mood:       CLUSTER.warmth,     // honey gold
+  energy:     CLUSTER.body,       // sage
+  anxiety:    CLUSTER.anxiety,    // muted mauve
+  excitement: CLUSTER.reflective, // dusty teal
+  spark:      CLUSTER.creative,   // terracotta (brand)
 }

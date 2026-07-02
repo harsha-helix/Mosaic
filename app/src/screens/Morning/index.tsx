@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MetricCircles } from '../../components/MetricCircles/MetricCircles'
+import { DayGlyph } from '../../components/DayGlyph/DayGlyph'
 import { useTodayStore } from '../../store/today'
 import { saveEntry, getEntry, enqueueSyncItem } from '../../lib/db/queries'
 import { pushEntry } from '../../lib/drive/operations'
@@ -32,6 +33,7 @@ export default function MorningScreen() {
   const [priority, setPriority]     = useState('')
   const [notice, setNotice]         = useState('')
   const [saving, setSaving]         = useState(false)
+  const [showGlyph, setShowGlyph]   = useState(false)
 
   async function handleSave() {
     setSaving(true)
@@ -67,24 +69,32 @@ export default function MorningScreen() {
       .then(() => pushEntry(updated))
       .catch(() => enqueueSyncItem('entry', 'entries/' + updated.date + '.json', JSON.stringify(updated)))
 
-    navigate('/', { replace: true })
+    // Instant visual — Day Glyph pops in where the button was, holds briefly,
+    // then we navigate home (spec §3: "Instant visual — Day Glyph").
+    const anyMetric = mood !== undefined || energy !== undefined || anxiety !== undefined || excitement !== undefined
+    if (anyMetric) {
+      setShowGlyph(true)
+      setTimeout(() => navigate('/', { replace: true }), 850)
+    } else {
+      navigate('/', { replace: true })
+    }
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] dark:bg-[#141414]">
+    <div className="min-h-screen bg-base dark:bg-base-dark">
       <div className="flex items-center gap-4 px-4 pt-14 pb-4">
-        <button onClick={() => navigate('/')} className="text-[#7C4DFF] text-[15px] font-medium">←</button>
+        <button onClick={() => navigate('/')} className="text-terracotta text-[15px] font-medium">←</button>
         <div>
-          <h1 className="font-display text-[22px] font-semibold text-[#111111] dark:text-[#F0F0F0]">Morning</h1>
-          <p className="text-[13px] text-[#AAAAAA]">{todayLabel()}</p>
+          <h1 className="font-display text-[22px] font-semibold text-ink dark:text-ink-dark">Morning</h1>
+          <p className="text-[13px] text-hint dark:text-hint-dark">{todayLabel()}</p>
         </div>
       </div>
 
       <div className="px-4 pb-24 space-y-6">
         {showSleep && (
           <div className="space-y-2">
-            <p className="text-[13px] text-[#AAAAAA]">Sleep from last night</p>
-            <p className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">How long did you sleep?</p>
+            <p className="text-[13px] text-hint dark:text-hint-dark">Sleep from last night</p>
+            <p className="text-[15px] font-medium text-ink dark:text-ink-dark">How long did you sleep?</p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
@@ -94,11 +104,11 @@ export default function MorningScreen() {
                 step="0.5"
                 min="0"
                 max="24"
-                className="w-28 px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF]"
+                className="w-28 px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta"
               />
-              <span className="text-[15px] text-[#666666]">hours</span>
+              <span className="text-[15px] text-muted dark:text-muted-dark">hours</span>
             </div>
-            <hr className="border-[#E8E8E8] dark:border-[#2E2E2E] mt-4" />
+            <hr className="border-hairline dark:border-hairline-dark mt-4" />
           </div>
         )}
 
@@ -107,7 +117,7 @@ export default function MorningScreen() {
         <MetricCircles label="Anxiety"    value={anxiety}    onChange={setAnxiety}    color={METRIC_COLORS.anxiety} />
         <MetricCircles label="Excitement" value={excitement} onChange={setExcitement} color={METRIC_COLORS.excitement} />
 
-        <hr className="border-[#E8E8E8] dark:border-[#2E2E2E]" />
+        <hr className="border-hairline dark:border-hairline-dark" />
 
         {[
           { label: "Today's intention", value: intention, set: setIntention, placeholder: "What do you want to do today?" },
@@ -115,24 +125,31 @@ export default function MorningScreen() {
           { label: "One thing to notice today", value: notice, set: setNotice, placeholder: "Notice light, notice kindness…" },
         ].map(({ label, value, set, placeholder }) => (
           <div key={label} className="space-y-2">
-            <label className="text-[15px] font-medium text-[#111111] dark:text-[#F0F0F0]">{label}</label>
+            <label className="text-[15px] font-medium text-ink dark:text-ink-dark">{label}</label>
             <textarea
               value={value}
               onChange={e => set(e.target.value)}
               placeholder={placeholder}
               rows={2}
-              className="w-full px-4 py-3 rounded-[12px] border border-[#E8E8E8] dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#111111] dark:text-[#F0F0F0] text-[15px] outline-none focus:border-[#7C4DFF] resize-none transition-colors"
+              className="w-full px-4 py-3 rounded-input border border-hairline dark:border-hairline-dark bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark text-[15px] outline-none focus:border-terracotta resize-none transition-colors"
             />
           </div>
         ))}
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-4 rounded-[999px] bg-[#7C4DFF] text-white font-display font-semibold text-[16px] disabled:opacity-60 active:scale-[0.98] transition-transform mt-2"
-        >
-          {saving ? 'Saving…' : 'Save morning'}
-        </button>
+        {showGlyph ? (
+          <div className="w-full py-4 flex items-center justify-center mt-2">
+            <DayGlyph mood={mood} energy={energy} anxiety={anxiety} excitement={excitement} size={72} animate />
+          </div>
+        ) : (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-4 rounded-btn bg-terracotta font-display font-semibold text-[16px] disabled:opacity-60 active:scale-[0.98] transition-transform mt-2"
+            style={{ color: '#3D1F12', boxShadow: 'inset 0 -2px 0 rgba(43,36,32,0.15), 0 1px 3px rgba(43,36,32,0.12)' }}
+          >
+            {saving ? 'Saving…' : 'Save morning'}
+          </button>
+        )}
       </div>
     </div>
   )

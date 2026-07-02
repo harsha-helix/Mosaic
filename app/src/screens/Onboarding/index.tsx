@@ -162,7 +162,7 @@ function WelcomeStep({ onBegin }: { onBegin: () => void }) {
         initial={{ scale: 0.4, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="font-display text-5xl font-bold text-ink dark:text-ink-dark"
+        className="font-wordmark text-6xl font-semibold text-ink dark:text-ink-dark"
       >
         ✦ Mosaic
       </motion.p>
@@ -170,7 +170,7 @@ function WelcomeStep({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.3 }}
-        className="font-display text-xl text-muted dark:text-muted-dark mt-2 italic"
+        className="font-body text-lg text-muted dark:text-muted-dark mt-2 italic"
       >
         Made of the moments you'd otherwise forget.
       </motion.p>

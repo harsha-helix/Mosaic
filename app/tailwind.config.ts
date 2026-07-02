@@ -49,6 +49,9 @@ const config: Config = {
         display: ['Fraunces', 'serif'],
         body: ['Karla', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+        // Scoped to the Onboarding welcome-step "✦ Mosaic" wordmark only
+        // (docs/15 follow-up) — every other heading stays on font-display.
+        wordmark: ['Cormorant Garamond', 'serif'],
       },
       borderRadius: {
         card: '16px',
